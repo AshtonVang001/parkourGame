@@ -226,23 +226,45 @@ void _Scene::updateScene()
     float t;
     vec3 hitPos;
 
-    // Check ground and additional platforms; pick nearest hit
+    // Check ground and additional platforms; transform triangles to world space first
     float bestT = FLT_MAX;
     vec3 bestHit = {0,0,0};
     bool anyHit = false;
 
-    if (ground && myCol->raycastMeshNearest(rayStart, rayDir, ground->triangles, t, hitPos)) {
-        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
-    }
-    if (platform1 && myCol->raycastMeshNearest(rayStart, rayDir, platform1->triangles, t, hitPos)) {
-        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
-    }
-    if (platform2 && myCol->raycastMeshNearest(rayStart, rayDir, platform2->triangles, t, hitPos)) {
-        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
-    }
-    if (platform3 && myCol->raycastMeshNearest(rayStart, rayDir, platform3->triangles, t, hitPos)) {
-        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
-    }
+    // Helper lambda to transform triangles by scale and translate and test raycast
+    auto testTransformed = [&](const std::vector<Triangle>& srcTris,
+                               float sx, float sy, float sz,
+                               float tx, float ty, float tz) {
+        if (srcTris.empty()) return;
+
+        std::vector<Triangle> temp;
+        temp.reserve(srcTris.size());
+
+        for (const Triangle& tri : srcTris) {
+            Triangle ttri;
+            ttri.a.x = tri.a.x * sx + tx; ttri.a.y = tri.a.y * sy + ty; ttri.a.z = tri.a.z * sz + tz;
+            ttri.b.x = tri.b.x * sx + tx; ttri.b.y = tri.b.y * sy + ty; ttri.b.z = tri.b.z * sz + tz;
+            ttri.c.x = tri.c.x * sx + tx; ttri.c.y = tri.c.y * sy + ty; ttri.c.z = tri.c.z * sz + tz;
+            temp.push_back(ttri);
+        }
+
+        float localT; vec3 localHit;
+        if (myCol->raycastMeshNearest(rayStart, rayDir, temp, localT, localHit)) {
+            if (localT < bestT) { bestT = localT; bestHit = localHit; anyHit = true; }
+        }
+    };
+
+    // Ground transform (draw uses translate(0, -3, 0) and scale(1,1,1))
+    if (ground) testTransformed(ground->triangles, 1.0f, 1.0f, 1.0f, 0.0f, -3.0f, 0.0f);
+
+    // platform1: translate(-5.0f, -3.0f, -10.0f); scale(2.0f,0.5f,1.0f)
+    if (platform1) testTransformed(platform1->triangles, 2.0f, 0.5f, 1.0f, -5.0f, -3.0f, -10.0f);
+
+    // platform2: translate(0.0f, -3.0f, -12.0f); scale(2.5f,0.5f,1.0f)
+    if (platform2) testTransformed(platform2->triangles, 2.5f, 0.5f, 1.0f, 0.0f, -3.0f, -12.0f);
+
+    // platform3: translate(5.0f, -3.0f, -14.0f); scale(2.0f,0.5f,1.0f)
+    if (platform3) testTransformed(platform3->triangles, 2.0f, 0.5f, 1.0f, 5.0f, -3.0f, -14.0f);
 
     if (anyHit)
         myCam->groundY = bestHit.y;
