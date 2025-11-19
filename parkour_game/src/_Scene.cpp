@@ -264,8 +264,11 @@ void _Scene::updateScene()
     // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
     if (platform1) testTransformed(platform1, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
 
-    if (anyHit)
-        myCam->groundY = bestHit.y;
+    if (anyHit) {
+        // Add a small tolerance so the camera doesn't sink slightly below the platform
+        const float collisionEpsilon = 0.1f; // adjust as needed
+        myCam->groundY = bestHit.y + collisionEpsilon;
+    }
     else
         myCam->groundY = -9999;
 
