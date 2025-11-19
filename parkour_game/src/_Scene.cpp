@@ -176,15 +176,24 @@ void _Scene::updateScene()
 }
 */
 
+
 void _Scene::updateScene()
 {
     myTime->updateDeltaTime();
+
+    myCam->rotateXY();
+
+    animTime += myTime->deltaTime;
+
+    animTime += myTime->deltaTime;
 
     // Raycast down from camera to detect ground height
     vec3 rayStart = myCam->eye;
     vec3 rayDir   = {0, -1, 0};
 
     static float smoothDT = 0.16f;
+    smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
+
 
     float t;
     vec3 hitPos;
@@ -194,8 +203,12 @@ void _Scene::updateScene()
     else
         myCam->groundY = -9999;
 
-    myInput->keyPressed(myCam, smoothDT);
+        if (myInput && myCam) {
+        myInput->keyPressed(myCam, smoothDT);
+        //myCam->update(smoothDT, myCol, ground);
+    }
 }
+
 
 
 void _Scene::drawScene()
