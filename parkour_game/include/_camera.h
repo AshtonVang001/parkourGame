@@ -51,6 +51,9 @@ class _camera
 
         float targetY;
         vec3 lookDir;
+        // store camera position at jump start so we can restore after landing
+        vec3 startEye;
+        vec3 startDes;
 
 
 

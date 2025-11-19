@@ -30,6 +30,8 @@ void _camera::camInit()
     isJumping = false;
     gravity = -40.0f;   // stronger than real gravity for game feel
     groundY = eye.y;
+    startEye = eye;
+    startDes = des;
 
 
 }
@@ -129,6 +131,9 @@ void _camera::jump()
     if (!isJumping) {
         verticalVel = 15.0f;   // jump strength
         isJumping = true;
+        // store starting camera position to restore after landing
+        startEye = eye;
+        startDes = des;
     }
 }
 
@@ -145,6 +150,9 @@ void _camera::updateVertical(float deltaTime)
             nextY = groundY;
             verticalVel = 0.0f;
             isJumping = false;
+            // restore camera to starting position at jump begin
+            eye = startEye;
+            des = startDes;
         }
 
         eye.y = nextY;
