@@ -1,4 +1,6 @@
 #include "_3DModelLoader.h"
+#include <_Scene.h>
+#include <gltfModel.h>
 
 _3DModelLoader::_3DModelLoader()
 {
@@ -221,6 +223,7 @@ void _3DModelLoader::initModel(const char* filename)
     /* Load MD2 model file */
     if (!ReadMD2Model (filename, &md2file))
     exit (EXIT_FAILURE);
+
 
 }
 

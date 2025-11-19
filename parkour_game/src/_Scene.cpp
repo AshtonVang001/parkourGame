@@ -2,6 +2,7 @@
 #include "gltfModel.h"
 #include "_gltfLoader.h"
 #include <iostream>
+#include <vector>
 
 _Scene::_Scene()
 {
@@ -133,6 +134,7 @@ void _Scene::initGL()
     myGltfModel->textureID = texID;
     myGltfModel2->textureID = texID2;
     ground->textureID = texID;
+    ground->buildTriangleList();
 
     if (!myGltfModel) {
         std::cerr << "GLTF: Failed to load model\n";
@@ -154,7 +156,7 @@ void _Scene::initGL()
 }
 
 
-
+/*
 void _Scene::updateScene()
 {
     myTime->updateDeltaTime();
@@ -171,6 +173,28 @@ void _Scene::updateScene()
         myInput->keyPressed(myCam, smoothDT);
         //myCam->update(smoothDT, myCol, ground);
     }
+}
+*/
+
+void _Scene::updateScene()
+{
+    myTime->updateDeltaTime();
+
+    // Raycast down from camera to detect ground height
+    vec3 rayStart = myCam->eye;
+    vec3 rayDir   = {0, -1, 0};
+
+    static float smoothDT = 0.16f;
+
+    float t;
+    vec3 hitPos;
+
+    if (myCol->raycastMeshNearest(rayStart, rayDir, ground->triangles, t, hitPos))
+        myCam->groundY = hitPos.y;
+    else
+        myCam->groundY = -9999;
+
+    myInput->keyPressed(myCam, smoothDT);
 }
 
 
