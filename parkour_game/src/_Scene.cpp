@@ -257,14 +257,14 @@ void _Scene::updateScene()
     // Ground transform (draw uses translate(0, -3, 0) and scale(1,1,1))
     if (ground) testTransformed(ground->triangles, 1.0f, 1.0f, 1.0f, 0.0f, -3.0f, 0.0f);
 
-    // platform1: translate(-5.0f, -3.0f, -10.0f); scale(2.0f,0.5f,1.0f)
-    if (platform1) testTransformed(platform1->triangles, 2.0f, 0.5f, 1.0f, -5.0f, -3.0f, -10.0f);
+    // platform1: translate(-8.0f, -3.0f, -8.0f); scale(2.0f,0.5f,1.0f)
+    if (platform1) testTransformed(platform1->triangles, 2.0f, 0.5f, 1.0f, -8.0f, -3.0f, -8.0f);
 
-    // platform2: translate(0.0f, -3.0f, -12.0f); scale(2.5f,0.5f,1.0f)
-    if (platform2) testTransformed(platform2->triangles, 2.5f, 0.5f, 1.0f, 0.0f, -3.0f, -12.0f);
+    // platform2: translate(0.0f, -3.0f, -14.0f); scale(2.5f,0.5f,1.0f)
+    if (platform2) testTransformed(platform2->triangles, 2.5f, 0.5f, 1.0f, 0.0f, -3.0f, -14.0f);
 
-    // platform3: translate(5.0f, -3.0f, -14.0f); scale(2.0f,0.5f,1.0f)
-    if (platform3) testTransformed(platform3->triangles, 2.0f, 0.5f, 1.0f, 5.0f, -3.0f, -14.0f);
+    // platform3: translate(8.0f, -3.0f, -20.0f); scale(2.0f,0.5f,1.0f)
+    if (platform3) testTransformed(platform3->triangles, 2.0f, 0.5f, 1.0f, 8.0f, -3.0f, -20.0f);
 
     if (anyHit)
         myCam->groundY = bestHit.y;
@@ -413,8 +413,8 @@ void _Scene::drawScene()
     // Draw extra platforms
     if (platform1) {
         glPushMatrix();
-            // Left platform
-            glTranslatef(-5.0f, -3.0f, -10.0f);
+            // Left platform (moved further left and forward)
+            glTranslatef(-8.0f, -3.0f, -8.0f);
             glScalef(2.0f, 0.5f, 1.0f);
             glColor3f(1,1,1);
             if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
@@ -425,8 +425,8 @@ void _Scene::drawScene()
 
     if (platform2) {
         glPushMatrix();
-            // Center platform
-            glTranslatef(0.0f, -3.0f, -12.0f);
+            // Center platform (moved a bit further back)
+            glTranslatef(0.0f, -3.0f, -14.0f);
             glScalef(2.5f, 0.5f, 1.0f);
             glColor3f(1,1,1);
             if (platform2->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform2->textureID); }
@@ -437,8 +437,8 @@ void _Scene::drawScene()
 
     if (platform3) {
         glPushMatrix();
-            // Right platform
-            glTranslatef(5.0f, -3.0f, -14.0f);
+            // Right platform (moved further right and back)
+            glTranslatef(8.0f, -3.0f, -20.0f);
             glScalef(2.0f, 0.5f, 1.0f);
             glColor3f(1,1,1);
             if (platform3->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform3->textureID); }
