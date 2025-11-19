@@ -129,7 +129,7 @@ void _Scene::initGL()
     GLuint texID = testTexture->loadTexture("images/test_texture.jpg");
     GLuint texID2 = testTexture->loadTexture("images/red.png");
 
-    // ---- Bind Model Texture
+    // ---- Bind Model Texture ----
     myGltfModel->textureID = texID;
     myGltfModel2->textureID = texID2;
     ground->textureID = texID;
@@ -162,14 +162,14 @@ void _Scene::updateScene()
     static float smoothDT = 0.16f;
     smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
 
-    //myCam->updateVertical(myTime->deltaTime);
+    //myCam->updateVertical(myTime->deltaTime);     ----OLD----
     myCam->rotateXY();
 
     animTime += myTime->deltaTime;
 
     if (myInput && myCam) {
         myInput->keyPressed(myCam, smoothDT);
-        //myCam->update(smoothDT, myCol, ground);
+        //myCam->update(smoothDT, myCol, ground);       ----OLD----
     }
 }
 
@@ -187,10 +187,9 @@ void _Scene::drawScene()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    // Make sure lighting/blend state is what the game expects
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    glDisable(GL_BLEND); // optional: enable later where needed
+    glDisable(GL_BLEND);
     glEnable(GL_TEXTURE_2D);
 
 
@@ -203,17 +202,17 @@ void _Scene::drawScene()
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
-    // Camera
+    // ---- Camera ----
     myCam->setUpCamera();
 
-    // Background parallax
+    // ---- Background parallax ----
     glPushMatrix();
         glScalef(4.33f, 4.33f, 1.0f);
         myPrlx->prlxScrollAuto("left", 0.001f);
         mySkyBox->drawSkyBox();
     glPopMatrix();
 
-    // Sprite animation
+    // ---- Sprite animation ----
     glPushMatrix();
         if (myTime->getTicks() > 70) {
             mySprite->spriteActions();
@@ -221,7 +220,7 @@ void _Scene::drawScene()
         }
     glPopMatrix();
 
-    // 3D MD2 Character
+    // ---- 3D MD2 Character ----
     glPushMatrix();
         glRotatef(90, 1, 0, 0);
         glRotatef(180, 0, 1, 0);
@@ -232,7 +231,7 @@ void _Scene::drawScene()
         //mdl3DW->Draw();
     glPopMatrix();
 
-    // Bullets
+    // ---- Bullets ----
     glPushMatrix();
     for (int i = 0; i < 10; i++) {
         if (b[i].isAlive) {
@@ -246,7 +245,7 @@ void _Scene::drawScene()
     if (myGltfModel) {
         glPushMatrix();
             glTranslatef(0, 0, -20);
-            glScalef(1, 1, 1); // Adjust size as needed
+            glScalef(1, 1, 1); // Adjust size
             glColor3f(1,1,1);
 
             if (myGltfModel->textureID != 0) {
@@ -263,47 +262,28 @@ void _Scene::drawScene()
 
     if (myGltfModel2) {
     glPushMatrix();
-        glTranslatef(5, 0, -20);   // position
+        glTranslatef(5, 0, -20);   // pos
         glScalef(1, 1, 1);         // scale
         glColor3f(1, 1, 1);
 
-        // Bind texture if available
+        // ---- Bind texture ----
         if (myGltfModel2->textureID != 0) {
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, myGltfModel2->textureID);
         }
 
-        // Update animation every frame
+        // ---- Update animation every frame ----
         if (myGltfModel2->data && myGltfModel2->data->animations_count > 0) {
             myGltfModel2->updateAnimation(animTime);
         }
 
-        // Draw all nodes recursively using global transforms
+        // ---- Draw all nodes recursively ----
         myGltfModel2->draw();
 
-        // Unbind texture
+        // ---- Unbind texture ----
         if (myGltfModel2->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
             glPopMatrix();
     }
-
-
-
-
-
-    /**
-    glPushMatrix();
-    glTranslatef(0,0,-5);
-    glRotatef(animTime * 50.0f, 0,1,0); // spin around Y
-    if (myGltfModel2->textureID != 0) {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, myGltfModel2->textureID);
-    }
-    myGltfModel2->draw();
-    glPopMatrix();
-    **/
-
-
-
 
     glPushMatrix();
         glTranslatef(0, -3, 0);
@@ -319,8 +299,8 @@ int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
     case WM_KEYDOWN:
         myInput->wParam = wParam;
-        myInput->keyPressed(mySkyBox);
-        //myInput->keyPressed(myCam);
+        //myInput->keyPressed(mySkyBox);        ----OLD----
+        //myInput->keyPressed(myCam);           ----OLD----
         myInput->keys[wParam] = true;
         break;
 
@@ -330,7 +310,7 @@ int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_LBUTTONDOWN:
-        //myInput->mouseEventDown(model, LOWORD(lParam), HIWORD(lParam));
+        //myInput->mouseEventDown(model, LOWORD(lParam), HIWORD(lParam));           ----OLD----
         clickCount = clickCount % 10;
 
         b[clickCount].src.x = mdl3D->pos.x;

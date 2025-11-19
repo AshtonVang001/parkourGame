@@ -59,13 +59,13 @@ public:
 
     _bullets b[10];
 
-    //load models
+    // ---- load models ----
     _gltfLoader loader;
     GltfModel* myGltfModel;
     GltfModel* myGltfModel2;
     GltfModel* ground;
 
-    //load model texture
+    // ---- load model texture ----
     _textureLoader *testTexture = new _textureLoader();
     _textureLoader *testTexture2 = new _textureLoader();
     _textureLoader *groundTexture = new _textureLoader();
