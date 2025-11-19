@@ -66,9 +66,14 @@ public:
     HWND windowHandle;
 
 
+    bool helpOpen = false;
+
+
 
     _textureLoader *menuTex = new _textureLoader();
     _textureLoader *menuUI = new _textureLoader();
+    _textureLoader *helpMenuTex = new _textureLoader();
+    _textureLoader *helpMenuUI = new _textureLoader();
 
 
     _timer *myTime;

@@ -97,12 +97,13 @@ void _mainMenu::initGL()
 
     // ---- Sounds ----
     snds->initSounds();
-    snds->playSound("sounds/gameThemeForClass.mp3");
-
-    snds->eng->setSoundVolume(0.3f);
+    snds->eng->setSoundVolume(0.2f);
+    snds->playSound("sounds/gameThemeForClass2.mp3");
 
     menuTex->loadTexture("images/menuTexture.png");
     menuUI->loadTexture("images/menuUI.png");
+    helpMenuTex->loadTexture("images/helpMenu.png");
+    helpMenuUI->loadTexture("images/helpMenuUI.png");
 }
 
 
@@ -137,6 +138,10 @@ void _mainMenu::updateScene()
 
 void _mainMenu::drawScene()
 {
+    ///////////////////////////////////////////
+    //UI Background (Parallax)
+    ///////////////////////////////////////////
+
     menuTex->bindTexture();
 
     glMatrixMode(GL_PROJECTION);
@@ -170,12 +175,9 @@ void _mainMenu::drawScene()
 
 
 
-
-
-
-
-
-
+    ///////////////////////////////////////////
+    //UI Text
+    ///////////////////////////////////////////
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -216,6 +218,94 @@ void _mainMenu::drawScene()
     glPopMatrix();
 
     glEnable(GL_DEPTH_TEST);
+
+
+
+    ///////////////////////////////////////////
+    //Draw Help Menu
+    ///////////////////////////////////////////
+
+    if (helpOpen) {
+        ///////////////////////////////////////////
+        //Help Background (Parallax)
+        ///////////////////////////////////////////
+
+        helpMenuTex->bindTexture();
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, 1, 0, 1, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Compute quad coordinates with scale and offset
+        float halfScaleX = bgScale / 2.0f;
+        float halfScaleY = bgScale / 2.0f;
+
+        float left   = 0.5f - halfScaleX + bgOffsetX;
+        float right  = 0.5f + halfScaleX + bgOffsetX;
+        float bottom = 0.5f - halfScaleY + bgOffsetY;
+        float top    = 0.5f + halfScaleY + bgOffsetY;
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(left, bottom);
+            glTexCoord2f(1, 1); glVertex2f(right, bottom);
+            glTexCoord2f(1, 0); glVertex2f(right, top);
+            glTexCoord2f(0, 0); glVertex2f(left, top);
+        glEnd();
+
+        glEnable(GL_DEPTH_TEST);
+
+
+        ///////////////////////////////////////////
+        //UI Text
+        ///////////////////////////////////////////
+
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // setup orthographic projection for 0..1 screen space
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, 1, 0, 1, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // bind the logo texture
+        helpMenuUI->bindTexture();
+
+        // draw quad
+        float logoWidth  = 0.3f;
+        float logoHeight = 0.2f;
+        float logoLeft   = 0.5f - logoWidth / 2.0f;
+        float logoRight  = 0.5f + logoWidth / 2.0f;
+        float logoBottom = 0.7f - logoHeight / 2.0f;
+        float logoTop    = 0.7f + logoHeight / 2.0f;
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(0, 0);
+            glTexCoord2f(1, 1); glVertex2f(1, 0);
+            glTexCoord2f(1, 0); glVertex2f(1, 1);
+            glTexCoord2f(0, 0); glVertex2f(0, 1);
+        glEnd();
+
+        // restore projection/modelview
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+
+        glEnable(GL_DEPTH_TEST);
+    }
 
 
 }

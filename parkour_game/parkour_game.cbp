@@ -14,6 +14,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="include" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -24,6 +25,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -32,17 +34,62 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add directory="C:/Users/ashtonvang001/Desktop/parkourGame/common/include" />
+			<Add directory="../common/include" />
 		</Compiler>
 		<Linker>
+			<Add library="../common/lib/libSoil.a" />
+			<Add library="../common/lib/libirrKlang.a" />
 			<Add library="freeglut" />
 			<Add library="opengl32" />
+			<Add library="glew32" />
 			<Add library="glu32" />
 			<Add library="winmm" />
 			<Add library="gdi32" />
-			<Add directory="C:/Users/ashtonvang001/Desktop/parkourGame/common/lib" />
+			<Add directory="../common/lib" />
 		</Linker>
+		<Unit filename="include/Anorms.h" />
+		<Unit filename="include/_3DModelLoader.h" />
+		<Unit filename="include/_Scene.h" />
+		<Unit filename="include/_bullets.h" />
+		<Unit filename="include/_camera.h" />
+		<Unit filename="include/_collisionCheck.h" />
+		<Unit filename="include/_common.h" />
+		<Unit filename="include/_gltfLoader.h" />
+		<Unit filename="include/_inputs.h" />
+		<Unit filename="include/_light.h" />
+		<Unit filename="include/_mainMenu.h" />
+		<Unit filename="include/_model.h" />
+		<Unit filename="include/_parallax.h" />
+		<Unit filename="include/_sceneSwitcher.h" />
+		<Unit filename="include/_skyBox.h" />
+		<Unit filename="include/_sounds.h" />
+		<Unit filename="include/_sprite.h" />
+		<Unit filename="include/_textureLoader.h" />
+		<Unit filename="include/_timer.h" />
+		<Unit filename="include/cgltf.h" />
+		<Unit filename="include/gltfModel.h" />
+		<Unit filename="include/t.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="src/_3DModelLoader.cpp" />
+		<Unit filename="src/_Scene.cpp" />
+		<Unit filename="src/_bullets.cpp" />
+		<Unit filename="src/_camera.cpp" />
+		<Unit filename="src/_collisionCheck.cpp" />
+		<Unit filename="src/_gltfLoader.cpp" />
+		<Unit filename="src/_inputs.cpp" />
+		<Unit filename="src/_light.cpp" />
+		<Unit filename="src/_mainMenu.cpp" />
+		<Unit filename="src/_model.cpp" />
+		<Unit filename="src/_parallax.cpp" />
+		<Unit filename="src/_sceneSwitcher.cpp" />
+		<Unit filename="src/_skyBox.cpp" />
+		<Unit filename="src/_sounds.cpp" />
+		<Unit filename="src/_sprite.cpp" />
+		<Unit filename="src/_textureLoader.cpp" />
+		<Unit filename="src/_timer.cpp" />
+		<Unit filename="src/cgltf_impl.cpp" />
+		<Unit filename="src/gltfModel.cpp" />
+		<Unit filename="src/t.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

@@ -40,6 +40,7 @@ public:
     float fov = 60.0f; // default is 45.0
 
 
+
     _timer *myTime;
 
     _light *myLight;

@@ -99,12 +99,12 @@ void _Scene::initGL()
 
     // ---- Skybox ----
     mySkyBox->skyBoxInit();
-    mySkyBox->tex[0] = mySkyBox->textures->loadTexture("images/front.jpg");
-    mySkyBox->tex[1] = mySkyBox->textures->loadTexture("images/back.jpg");
-    mySkyBox->tex[2] = mySkyBox->textures->loadTexture("images/top.jpg");
-    mySkyBox->tex[3] = mySkyBox->textures->loadTexture("images/bottom.jpg");
-    mySkyBox->tex[4] = mySkyBox->textures->loadTexture("images/right.jpg");
-    mySkyBox->tex[5] = mySkyBox->textures->loadTexture("images/left.jpg");
+    mySkyBox->tex[0] = mySkyBox->textures->loadTexture("images/back.png");
+    mySkyBox->tex[1] = mySkyBox->textures->loadTexture("images/front.png");
+    mySkyBox->tex[2] = mySkyBox->textures->loadTexture("images/top.png");
+    mySkyBox->tex[3] = mySkyBox->textures->loadTexture("images/bottom.png");
+    mySkyBox->tex[4] = mySkyBox->textures->loadTexture("images/right.png");
+    mySkyBox->tex[5] = mySkyBox->textures->loadTexture("images/left.png");
 
     // ---- Sprite ----
     mySprite->spriteInit("images/eg-1.png", 6, 4);

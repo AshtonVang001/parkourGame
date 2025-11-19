@@ -18,11 +18,13 @@
 
 #include <_Scene.h>
 #include <_mainMenu.h>
+#include <_sounds.h>
 
 _Scene *myScene = new _Scene();     //create scene class instance
 _mainMenu *myMenu = new _mainMenu();
 _sceneSwitcher* sceneSwitcher = new _sceneSwitcher();
 _timer myTimer;
+_sounds *menuSnds = new _sounds();
 
 using namespace std;
 
@@ -409,9 +411,9 @@ int WINAPI WinMain(
 
                 POINT center;
 
-                if (keys['N']) {
-                    sceneSwitcher->currentScene = SCENE_GAME;
-                }
+
+                static bool prevH = false;
+                bool currentH = keys['H'];
 
 
                 switch (sceneSwitcher->currentScene)
@@ -437,6 +439,7 @@ int WINAPI WinMain(
                         myScene->drawScene();                     // draw after update
 
                         if (keys[VK_ESCAPE]) {
+                            menuSnds->playSound("sounds/button.wav");
                             sceneSwitcher->currentScene = SCENE_MENU;
                         }
 
@@ -446,11 +449,23 @@ int WINAPI WinMain(
                         myMenu->updateScene();                   // update with delta time
                         myMenu->drawScene();                     // draw after update
 
+                        if (keys['N']) {
+                            menuSnds->playSound("sounds/button.wav");
+                            sceneSwitcher->currentScene = SCENE_GAME;
+                        }
+
                         if (keys['Q']) {
+                            menuSnds->playSound("sounds/button.wav");
                             done = TRUE;
+                        }
+
+                        if (currentH && !prevH) {
+                            menuSnds->playSound("sounds/button.wav");
+                            myMenu->helpOpen = !myMenu->helpOpen;
                         }
                         break;
                 }
+                prevH = currentH;
 
 				SwapBuffers(hDC);	    // Swap Buffers (Double Buffering)
 			}
