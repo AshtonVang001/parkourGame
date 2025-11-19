@@ -391,8 +391,9 @@ void _Scene::drawScene()
     // Draw extra platforms
     if (platform1) {
         glPushMatrix();
-            glTranslatef(-4.0f, -1.5f, -10.0f);
-            glScalef(1.5f, 0.5f, 1.0f);
+            // Left platform
+            glTranslatef(-5.0f, -3.0f, -10.0f);
+            glScalef(2.0f, 0.5f, 1.0f);
             glColor3f(1,1,1);
             if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
             platform1->draw();
@@ -402,8 +403,9 @@ void _Scene::drawScene()
 
     if (platform2) {
         glPushMatrix();
-            glTranslatef(3.5f, -0.5f, -15.0f);
-            glScalef(2.0f, 0.4f, 1.0f);
+            // Center platform
+            glTranslatef(0.0f, -3.0f, -12.0f);
+            glScalef(2.5f, 0.5f, 1.0f);
             glColor3f(1,1,1);
             if (platform2->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform2->textureID); }
             platform2->draw();
@@ -413,8 +415,9 @@ void _Scene::drawScene()
 
     if (platform3) {
         glPushMatrix();
-            glTranslatef(0.0f, 0.5f, -8.0f);
-            glScalef(1.0f, 0.4f, 1.0f);
+            // Right platform
+            glTranslatef(5.0f, -3.0f, -14.0f);
+            glScalef(2.0f, 0.5f, 1.0f);
             glColor3f(1,1,1);
             if (platform3->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform3->textureID); }
             platform3->draw();
