@@ -257,14 +257,14 @@ void _Scene::updateScene()
     // Ground transform (draw uses translate(0, -3, 0) and scale(1,1,1))
     if (ground) testTransformed(ground->triangles, 1.0f, 1.0f, 1.0f, 0.0f, -3.0f, 0.0f);
 
-    // platform1: translate(-8.0f, -3.0f, -8.0f); scale(2.0f,0.5f,1.0f)
-    if (platform1) testTransformed(platform1->triangles, 2.0f, 0.5f, 1.0f, -8.0f, -3.0f, -8.0f);
+    // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
+    if (platform1) testTransformed(platform1->triangles, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
 
-    // platform2: translate(0.0f, -3.0f, -14.0f); scale(2.5f,0.5f,1.0f)
-    if (platform2) testTransformed(platform2->triangles, 2.5f, 0.5f, 1.0f, 0.0f, -3.0f, -14.0f);
+    // platform2: translate(0.0f, -3.0f, -14.0f); smaller center platform
+    if (platform2) testTransformed(platform2->triangles, 1.2f, 0.3f, 0.5f, 0.0f, -3.0f, -14.0f);
 
-    // platform3: translate(8.0f, -3.0f, -20.0f); scale(2.0f,0.5f,1.0f)
-    if (platform3) testTransformed(platform3->triangles, 2.0f, 0.5f, 1.0f, 8.0f, -3.0f, -20.0f);
+    // platform3: translate(8.0f, -3.0f, -20.0f); smaller right platform
+    if (platform3) testTransformed(platform3->triangles, 1.0f, 0.3f, 0.5f, 8.0f, -3.0f, -20.0f);
 
     if (anyHit)
         myCam->groundY = bestHit.y;
@@ -413,9 +413,9 @@ void _Scene::drawScene()
     // Draw extra platforms
     if (platform1) {
         glPushMatrix();
-            // Left platform (moved further left and forward)
+            // Left platform (moved further left and forward) - smaller footprint
             glTranslatef(-8.0f, -3.0f, -8.0f);
-            glScalef(2.0f, 0.5f, 1.0f);
+            glScalef(1.0f, 0.3f, 0.5f);
             glColor3f(1,1,1);
             if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
             platform1->draw();
@@ -425,9 +425,9 @@ void _Scene::drawScene()
 
     if (platform2) {
         glPushMatrix();
-            // Center platform (moved a bit further back)
+            // Center platform (moved a bit further back) - smaller footprint
             glTranslatef(0.0f, -3.0f, -14.0f);
-            glScalef(2.5f, 0.5f, 1.0f);
+            glScalef(1.2f, 0.3f, 0.5f);
             glColor3f(1,1,1);
             if (platform2->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform2->textureID); }
             platform2->draw();
@@ -437,9 +437,9 @@ void _Scene::drawScene()
 
     if (platform3) {
         glPushMatrix();
-            // Right platform (moved further right and back)
+            // Right platform (moved further right and back) - smaller footprint
             glTranslatef(8.0f, -3.0f, -20.0f);
-            glScalef(2.0f, 0.5f, 1.0f);
+            glScalef(1.0f, 0.3f, 0.5f);
             glColor3f(1,1,1);
             if (platform3->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform3->textureID); }
             platform3->draw();
