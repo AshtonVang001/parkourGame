@@ -66,8 +66,6 @@ public:
     GltfModel* ground;
     // extra platforms
     GltfModel* platform1 = nullptr;
-    GltfModel* platform2 = nullptr;
-    GltfModel* platform3 = nullptr;
 
     //load model texture
     _textureLoader *testTexture = new _textureLoader();

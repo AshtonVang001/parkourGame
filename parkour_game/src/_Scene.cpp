@@ -26,8 +26,6 @@ _Scene::_Scene()
 
     myGltfModel = nullptr;
     platform1 = nullptr;
-    platform2 = nullptr;
-    platform3 = nullptr;
 }
 
 _Scene::~_Scene()
@@ -48,8 +46,6 @@ _Scene::~_Scene()
     delete snds;
     delete myGltfModel;
     delete platform1;
-    delete platform2;
-    delete platform3;
 }
 
 void _Scene::reSizeScene(int width, int height)
@@ -143,25 +139,13 @@ void _Scene::initGL()
     ground->textureID = texID;
     ground->buildTriangleList();
 
-    // ---- Extra platforms (reuse ground model as simple platform instances)
+    // ---- Extra platform (reuse ground model as simple platform instance)
     platform1 = loader.loadModel("models/ground.glb");
-    platform2 = loader.loadModel("models/ground.glb");
-    platform3 = loader.loadModel("models/ground.glb");
 
     if (platform1) {
         platform1->textureID = texID2;
         platform1->buildTriangleList();
         platform1->uploadToGPU();
-    }
-    if (platform2) {
-        platform2->textureID = texID2;
-        platform2->buildTriangleList();
-        platform2->uploadToGPU();
-    }
-    if (platform3) {
-        platform3->textureID = texID;
-        platform3->buildTriangleList();
-        platform3->uploadToGPU();
     }
 
     if (!myGltfModel) {
@@ -259,12 +243,6 @@ void _Scene::updateScene()
 
     // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
     if (platform1) testTransformed(platform1->triangles, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
-
-    // platform2: translate(0.0f, -3.0f, -14.0f); smaller center platform
-    if (platform2) testTransformed(platform2->triangles, 1.2f, 0.3f, 0.5f, 0.0f, -3.0f, -14.0f);
-
-    // platform3: translate(8.0f, -3.0f, -20.0f); smaller right platform
-    if (platform3) testTransformed(platform3->triangles, 1.0f, 0.3f, 0.5f, 8.0f, -3.0f, -20.0f);
 
     if (anyHit)
         myCam->groundY = bestHit.y;
@@ -423,29 +401,7 @@ void _Scene::drawScene()
         glPopMatrix();
     }
 
-    if (platform2) {
-        glPushMatrix();
-            // Center platform (moved a bit further back) - smaller footprint
-            glTranslatef(0.0f, -3.0f, -14.0f);
-            glScalef(1.2f, 0.3f, 0.5f);
-            glColor3f(1,1,1);
-            if (platform2->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform2->textureID); }
-            platform2->draw();
-            if (platform2->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
-        glPopMatrix();
-    }
-
-    if (platform3) {
-        glPushMatrix();
-            // Right platform (moved further right and back) - smaller footprint
-            glTranslatef(8.0f, -3.0f, -20.0f);
-            glScalef(1.0f, 0.3f, 0.5f);
-            glColor3f(1,1,1);
-            if (platform3->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform3->textureID); }
-            platform3->draw();
-            if (platform3->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
-        glPopMatrix();
-    }
+    // (Only one platform is used now)
 
     // Draw ground
     glPushMatrix();
