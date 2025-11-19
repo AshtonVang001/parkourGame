@@ -217,20 +217,38 @@ void _Scene::updateScene()
     vec3 bestHit = {0,0,0};
     bool anyHit = false;
 
-    // Helper lambda to transform triangles by scale and translate and test raycast
-    auto testTransformed = [&](const std::vector<Triangle>& srcTris,
+    // Helper lambda to transform a model's triangles by its node root transform
+    // plus the scene translate/scale, and test raycast against the transformed tris.
+    auto testTransformed = [&](const GltfModel* model,
                                float sx, float sy, float sz,
                                float tx, float ty, float tz) {
+        if (!model) return;
+        const auto& srcTris = model->triangles;
         if (srcTris.empty()) return;
+
+        // Build combined matrix: Mouter = Translate(tx,ty,tz) * Scale(sx,sy,sz)
+        glm::mat4 Mouter = glm::translate(glm::mat4(1.0f), glm::vec3(tx, ty, tz))
+                         * glm::scale(glm::mat4(1.0f), glm::vec3(sx, sy, sz));
+
+        // model root transform (if present)
+        glm::mat4 Mnode = glm::mat4(1.0f);
+        if (!model->nodeGlobalTransforms.empty()) {
+            Mnode = model->nodeGlobalTransforms[0];
+        }
+
+        glm::mat4 M = Mouter * Mnode; // final transform applied to model-space vertices
 
         std::vector<Triangle> temp;
         temp.reserve(srcTris.size());
 
         for (const Triangle& tri : srcTris) {
             Triangle ttri;
-            ttri.a.x = tri.a.x * sx + tx; ttri.a.y = tri.a.y * sy + ty; ttri.a.z = tri.a.z * sz + tz;
-            ttri.b.x = tri.b.x * sx + tx; ttri.b.y = tri.b.y * sy + ty; ttri.b.z = tri.b.z * sz + tz;
-            ttri.c.x = tri.c.x * sx + tx; ttri.c.y = tri.c.y * sy + ty; ttri.c.z = tri.c.z * sz + tz;
+            glm::vec4 a = M * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+            glm::vec4 b = M * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+            glm::vec4 c = M * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+            ttri.a = { a.x, a.y, a.z };
+            ttri.b = { b.x, b.y, b.z };
+            ttri.c = { c.x, c.y, c.z };
             temp.push_back(ttri);
         }
 
@@ -244,7 +262,7 @@ void _Scene::updateScene()
     // (If you want the ground back later, re-enable building its triangle list.)
 
     // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
-    if (platform1) testTransformed(platform1->triangles, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
+    if (platform1) testTransformed(platform1, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
 
     if (anyHit)
         myCam->groundY = bestHit.y;
