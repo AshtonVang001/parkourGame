@@ -143,7 +143,8 @@ void _Scene::initGL()
     platform1 = loader.loadModel("models/ground.glb");
 
     if (platform1) {
-        platform1->textureID = texID2;
+        // Use ground/test texture instead of the red texture so platform matches scene
+        platform1->textureID = texID;
         platform1->buildTriangleList();
         platform1->uploadToGPU();
     }
