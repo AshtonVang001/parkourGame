@@ -3,6 +3,7 @@
 #include "_gltfLoader.h"
 #include <iostream>
 #include <vector>
+#include <cfloat>
 
 _Scene::_Scene()
 {
@@ -24,6 +25,9 @@ _Scene::_Scene()
     snds = nullptr;
 
     myGltfModel = nullptr;
+    platform1 = nullptr;
+    platform2 = nullptr;
+    platform3 = nullptr;
 }
 
 _Scene::~_Scene()
@@ -43,6 +47,9 @@ _Scene::~_Scene()
     delete myCol;
     delete snds;
     delete myGltfModel;
+    delete platform1;
+    delete platform2;
+    delete platform3;
 }
 
 void _Scene::reSizeScene(int width, int height)
@@ -136,6 +143,27 @@ void _Scene::initGL()
     ground->textureID = texID;
     ground->buildTriangleList();
 
+    // ---- Extra platforms (reuse ground model as simple platform instances)
+    platform1 = loader.loadModel("models/ground.glb");
+    platform2 = loader.loadModel("models/ground.glb");
+    platform3 = loader.loadModel("models/ground.glb");
+
+    if (platform1) {
+        platform1->textureID = texID2;
+        platform1->buildTriangleList();
+        platform1->uploadToGPU();
+    }
+    if (platform2) {
+        platform2->textureID = texID2;
+        platform2->buildTriangleList();
+        platform2->uploadToGPU();
+    }
+    if (platform3) {
+        platform3->textureID = texID;
+        platform3->buildTriangleList();
+        platform3->uploadToGPU();
+    }
+
     if (!myGltfModel) {
         std::cerr << "GLTF: Failed to load model\n";
     }
@@ -198,8 +226,26 @@ void _Scene::updateScene()
     float t;
     vec3 hitPos;
 
-    if (myCol->raycastMeshNearest(rayStart, rayDir, ground->triangles, t, hitPos))
-        myCam->groundY = hitPos.y;
+    // Check ground and additional platforms; pick nearest hit
+    float bestT = FLT_MAX;
+    vec3 bestHit = {0,0,0};
+    bool anyHit = false;
+
+    if (ground && myCol->raycastMeshNearest(rayStart, rayDir, ground->triangles, t, hitPos)) {
+        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
+    }
+    if (platform1 && myCol->raycastMeshNearest(rayStart, rayDir, platform1->triangles, t, hitPos)) {
+        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
+    }
+    if (platform2 && myCol->raycastMeshNearest(rayStart, rayDir, platform2->triangles, t, hitPos)) {
+        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
+    }
+    if (platform3 && myCol->raycastMeshNearest(rayStart, rayDir, platform3->triangles, t, hitPos)) {
+        if (t < bestT) { bestT = t; bestHit = hitPos; anyHit = true; }
+    }
+
+    if (anyHit)
+        myCam->groundY = bestHit.y;
     else
         myCam->groundY = -9999;
 
@@ -342,6 +388,41 @@ void _Scene::drawScene()
 
 
 
+    // Draw extra platforms
+    if (platform1) {
+        glPushMatrix();
+            glTranslatef(-4.0f, -1.5f, -10.0f);
+            glScalef(1.5f, 0.5f, 1.0f);
+            glColor3f(1,1,1);
+            if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
+            platform1->draw();
+            if (platform1->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
+        glPopMatrix();
+    }
+
+    if (platform2) {
+        glPushMatrix();
+            glTranslatef(3.5f, -0.5f, -15.0f);
+            glScalef(2.0f, 0.4f, 1.0f);
+            glColor3f(1,1,1);
+            if (platform2->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform2->textureID); }
+            platform2->draw();
+            if (platform2->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
+        glPopMatrix();
+    }
+
+    if (platform3) {
+        glPushMatrix();
+            glTranslatef(0.0f, 0.5f, -8.0f);
+            glScalef(1.0f, 0.4f, 1.0f);
+            glColor3f(1,1,1);
+            if (platform3->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform3->textureID); }
+            platform3->draw();
+            if (platform3->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
+        glPopMatrix();
+    }
+
+    // Draw ground
     glPushMatrix();
         glTranslatef(0, -3, 0);
         glScalef(1, 1, 1);
