@@ -137,7 +137,8 @@ void _Scene::initGL()
     myGltfModel->textureID = texID;
     myGltfModel2->textureID = texID2;
     ground->textureID = texID;
-    ground->buildTriangleList();
+    // Do not build triangle list for the ground — use only `platform1` for collisions
+    // ground->buildTriangleList();
 
     // ---- Extra platform (reuse ground model as simple platform instance)
     platform1 = loader.loadModel("models/ground.glb");
@@ -239,8 +240,8 @@ void _Scene::updateScene()
         }
     };
 
-    // Ground transform (draw uses translate(0, -3, 0) and scale(1,1,1))
-    if (ground) testTransformed(ground->triangles, 1.0f, 1.0f, 1.0f, 0.0f, -3.0f, 0.0f);
+    // Do not include ground in collision tests; only platform1 is used for collisions
+    // (If you want the ground back later, re-enable building its triangle list.)
 
     // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
     if (platform1) testTransformed(platform1->triangles, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
@@ -404,13 +405,7 @@ void _Scene::drawScene()
 
     // (Only one platform is used now)
 
-    // Draw ground
-    glPushMatrix();
-        glTranslatef(0, -3, 0);
-        glScalef(1, 1, 1);
-        glColor3f(1,1,1);
-        ground->draw();
-    glPopMatrix();
+    // Ground drawing disabled — only `platform1` should be visible as the single platform
 }
 
 int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
