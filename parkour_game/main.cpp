@@ -1,177 +1,478 @@
-/*
- * GLUT Shapes Demo
- *
- * Written by Nigel Stewart November 2003
- *
- * This program is test harness for the sphere, cone
- * and torus shapes in GLUT.
- *
- * Spinning wireframe and smooth shaded shapes are
- * displayed until the ESC or q key is pressed.  The
- * number of geometry stacks and slices can be adjusted
- * using the + and - keys.
- */
+#pragma once
 
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
+#ifdef _WIN32
+#  define WINDOWS_LEAN_AND_MEAN
+#  define NOMINMAX
+#  include <windows.h>
 #endif
 
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+
 #include <stdlib.h>
+#include <iostream>
+#include <windows.h>	// Header File For Windows
+#include <_common.h>
+#include <_timer.h>
+#include <_sceneSwitcher.h>
 
-static int slices = 16;
-static int stacks = 16;
+#include <_Scene.h>
+#include <_mainMenu.h>
 
-/* GLUT callback Handlers */
+_Scene *myScene = new _Scene();     //create scene class instance
+_mainMenu *myMenu = new _mainMenu();
+_sceneSwitcher* sceneSwitcher = new _sceneSwitcher();
+_timer myTimer;
 
-static void resize(int width, int height)
+using namespace std;
+
+HDC		    hDC=NULL;   // Private GDI Device Context
+HGLRC		hRC=NULL;	// Permanent Rendering Context
+HWND		hWnd=NULL;	// Holds Our Window Handle
+HINSTANCE	hInstance;	// Holds The Instance Of The Application
+
+bool	keys[256];		// Array Used For The Keyboard Routine
+bool	active=TRUE;	// Window Active Flag Set To TRUE By Default
+bool	fullscreen=TRUE;// Fullscreen Flag Set To Fullscreen Mode By Default
+
+LRESULT	CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);	// Declaration For WndProc
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//										THE KILL GL WINDOW
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void KillGLWindow()					    // Properly Kill The Window
 {
-    const float ar = (float) width / (float) height;
+	if (fullscreen)						// Are We In Fullscreen Mode?
+	{
+		ChangeDisplaySettings(NULL,0);	// If So Switch Back To The Desktop
+		ShowCursor(TRUE);				// Show Mouse Pointer
+	}
 
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glFrustum(-ar, ar, -1.0, 1.0, 2.0, 100.0);
+	if (hRC)							// Do We Have A Rendering Context?
+	{
+		if (!wglMakeCurrent(NULL,NULL))	// Are We Able To Release The DC And RC Contexts?
+		{
+			MessageBox(NULL,"Release Of DC And RC Failed.","SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+		}
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity() ;
+		if (!wglDeleteContext(hRC))		// Are We Able To Delete The RC?
+		{
+			MessageBox(NULL,"Release Rendering Context Failed.","SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+		}
+		hRC=NULL;						// Set RC To NULL
+	}
+
+	if (hDC && !ReleaseDC(hWnd,hDC))	// Are We Able To Release The DC
+	{
+		MessageBox(NULL,"Release Device Context Failed.","SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+		hDC=NULL;						// Set DC To NULL
+	}
+
+	if (hWnd && !DestroyWindow(hWnd))	// Are We Able To Destroy The Window?
+	{
+		MessageBox(NULL,"Could Not Release hWnd.","SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+		hWnd=NULL;						// Set hWnd To NULL
+	}
+
+	if (!UnregisterClass("OpenGL",hInstance)) // Are We Able To Unregister Class
+	{
+		MessageBox(NULL,"Could Not Unregister Class.","SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+		hInstance=NULL;					// Set hInstance To NULL
+	}
 }
 
-static void display(void)
+/*	This Code Creates Our OpenGL Window.  Parameters Are:					        *
+ *	title			- Title To Appear At The Top Of The Window			            *
+ *	width			- Width Of The GL Window Or Fullscreen Mode			            *
+ *	height			- Height Of The GL Window Or Fullscreen Mode			        *
+ *	bits			- Number Of Bits To Use For Color (8/16/24/32)			        *
+ *	fullscreenflag	- Use Fullscreen Mode (TRUE) Or Windowed Mode (FALSE)			*/
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//	THE CREATE GL WINDOW
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscreenflag)
 {
-    const double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
-    const double a = t*90.0;
+	GLuint		PixelFormat;	    // Holds The Results After Searching For A Match
+	WNDCLASS	wc;			        // Windows Class Structure
+	DWORD		dwExStyle;		    // Window Extended Style
+	DWORD		dwStyle;		    // Window Style
+	RECT		WindowRect;		    // Grabs Rectangle Upper Left / Lower Right Values
+	WindowRect.left=(long)0;	    // Set Left Value To 0
+	WindowRect.right=(long)width;	// Set Right Value To Requested Width
+	WindowRect.top=(long)0;			// Set Top Value To 0
+	WindowRect.bottom=(long)height;	// Set Bottom Value To Requested Height
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glColor3d(1,0,0);
+	fullscreen=fullscreenflag;		// Set The Global Fullscreen Flag
 
-    glPushMatrix();
-        glTranslated(-2.4,1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutSolidSphere(1,slices,stacks);
-    glPopMatrix();
+	hInstance		= GetModuleHandle(NULL);	            // Grab An Instance For Our Window
+	wc.style		= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;	// Redraw On Size, And Own DC For Window.
+	wc.lpfnWndProc		= (WNDPROC) WndProc;	            // WndProc Handles Messages
+	wc.cbClsExtra		= 0;					            // No Extra Window Data
+	wc.cbWndExtra		= 0;					            // No Extra Window Data
+	wc.hInstance		= hInstance;			        	// Set The Instance
+	wc.hIcon			= LoadIcon(NULL, IDI_WINLOGO);	    // Load The Default Icon
+	wc.hCursor			= LoadCursor(NULL, IDC_ARROW);	    // Load The Arrow Pointer
+	wc.hbrBackground	= NULL;					            // No Background Required For GL
+	wc.lpszMenuName		= NULL;					            // We Don't Want A Menu
+	wc.lpszClassName	= "OpenGL";				            // Set The Class Name
 
-    glPushMatrix();
-        glTranslated(0,1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutSolidCone(1,1,slices,stacks);
-    glPopMatrix();
+	if (!RegisterClass(&wc))					            // Attempt To Register The Window Class
+	{
+		MessageBox(NULL,"Failed To Register The Window Class.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		return FALSE;						                // Return FALSE
+	}
 
-    glPushMatrix();
-        glTranslated(2.4,1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutSolidTorus(0.2,0.8,slices,stacks);
-    glPopMatrix();
+	if (fullscreen)							                // Attempt Fullscreen Mode?
+	{
+		DEVMODE dmScreenSettings;				            // Device Mode
+		memset(&dmScreenSettings,0,sizeof(dmScreenSettings));// Makes Sure Memory's Cleared
+		dmScreenSettings.dmSize=sizeof(dmScreenSettings);	// Size Of The Devmode Structure
+		dmScreenSettings.dmPelsWidth	= width;		    // Selected Screen Width
+		dmScreenSettings.dmPelsHeight	= height;		    // Selected Screen Height
+		dmScreenSettings.dmBitsPerPel	= bits;			    // Selected Bits Per Pixel
+		dmScreenSettings.dmFields=DM_BITSPERPEL|DM_PELSWIDTH|DM_PELSHEIGHT;
 
-    glPushMatrix();
-        glTranslated(-2.4,-1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutWireSphere(1,slices,stacks);
-    glPopMatrix();
+		dwExStyle=WS_EX_APPWINDOW;				            // Window Extended Style
+		dwStyle= WS_POPUP;			  		                // must handle Gsync situations: Windows Style
+		//ShowCursor(FALSE);					                // Hide Mouse Pointer
+	}
+	else
+	{
+		dwExStyle=WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;		// Window Extended Style
+		dwStyle=WS_OVERLAPPEDWINDOW;				        // Windows Style
+	}
 
-    glPushMatrix();
-        glTranslated(0,-1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutWireCone(1,1,slices,stacks);
-    glPopMatrix();
+	AdjustWindowRectEx(&WindowRect, dwStyle, FALSE, dwExStyle);	// Adjust Window To True Requested Size
 
-    glPushMatrix();
-        glTranslated(2.4,-1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutWireTorus(0.2,0.8,slices,stacks);
-    glPopMatrix();
+	// Create The Window
+	if (!(hWnd=CreateWindowEx( dwExStyle,			    	// Extended Style For The Window
+				   "OpenGL",				                // Class Name
+				   title,				                    // Window Title
+				   dwStyle |				                // Defined Window Style
+				   WS_CLIPSIBLINGS |			            // Required Window Style
+				   WS_CLIPCHILDREN,			                // Required Window Style
+				   0, 0,				                    // Window Position
+				   WindowRect.right-WindowRect.left,	    // Calculate Window Width
+				   WindowRect.bottom-WindowRect.top,	    // Calculate Window Height
+				   NULL,				                    // No Parent Window
+				   NULL,				                    // No Menu
+				   hInstance,				                // Instance
+				   NULL)))				                    // Dont Pass Anything To WM_CREATE
+	{
+		KillGLWindow();						                // Reset The Display
+		MessageBox(NULL,"Window Creation Error.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		return FALSE;						                // Return FALSE
+	}
 
-    glutSwapBuffers();
-}
+	static	PIXELFORMATDESCRIPTOR pfd=				        // pfd Tells Windows How We Want Things To Be
+	{
+		sizeof(PIXELFORMATDESCRIPTOR),				        // Size Of This Pixel Format Descriptor
+		1,							                        // Version Number
+		PFD_DRAW_TO_WINDOW |					            // Format Must Support Window
+		PFD_SUPPORT_OPENGL |					            // Format Must Support OpenGL
+		PFD_DOUBLEBUFFER,					                // Must Support Double Buffering
+		PFD_TYPE_RGBA,						                // Request An RGBA Format
+		bits,							                    // Select Our Color Depth
+		0, 0, 0, 0, 0, 0,					                // Color Bits Ignored
+		0,							                        // No Alpha Buffer
+		0,							                        // Shift Bit Ignored
+		0,							                        // No Accumulation Buffer
+		0, 0, 0, 0,						                    // Accumulation Bits Ignored
+		16,							                        // 16Bit Z-Buffer (Depth Buffer)
+		0,							                        // No Stencil Buffer
+		0,							                        // No Auxiliary Buffer
+		PFD_MAIN_PLANE,						                // Main Drawing Layer
+		0,							                        // Reserved
+		0, 0, 0							                    // Layer Masks Ignored
+	};
+
+	if (!(hDC=GetDC(hWnd)))						            // Did We Get A Device Context?
+	{
+		KillGLWindow();						                // Reset The Display
+		MessageBox(NULL,"Can't Create A GL Device Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		return FALSE;						                // Return FALSE
+	}
+
+	if (!(PixelFormat=ChoosePixelFormat(hDC,&pfd)))	        // Did Windows Find A Matching Pixel Format?
+	{
+		KillGLWindow();						                // Reset The Display
+		MessageBox(NULL,"Can't Find A Suitable PixelFormat.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		return FALSE;						                // Return FALSE
+	}
+
+	if(!SetPixelFormat(hDC,PixelFormat,&pfd))			    // Are We Able To Set The Pixel Format?
+	{
+		KillGLWindow();						                // Reset The Display
+		MessageBox(NULL,"Can't Set The PixelFormat.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		return FALSE;						                // Return FALSE
+	}
+
+	if (!(hRC=wglCreateContext(hDC)))				        // Are We Able To Get A Rendering Context?
+	{
+		KillGLWindow();						                // Reset The Display
+		MessageBox(NULL,"Can't Create A GL Rendering Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		return FALSE;						                // Return FALSE
+	}
 
 
-static void key(unsigned char key, int x, int y)
-{
-    switch (key)
+    std::cout << "Window created, about to make context current\n";
+	// Try To Activate The Rendering Context
+    if(!wglMakeCurrent(hDC,hRC))
     {
-        case 27 :
-        case 'q':
-            exit(0);
-            break;
-
-        case '+':
-            slices++;
-            stacks++;
-            break;
-
-        case '-':
-            if (slices>3 && stacks>3)
-            {
-                slices--;
-                stacks--;
-            }
-            break;
+        KillGLWindow();
+        MessageBox(NULL,"Can't Activate The GL Rendering Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+        return FALSE;
     }
 
-    glutPostRedisplay();
+    // Initialize GLEW now that context exists
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        std::string msg = "GLEW init failed: ";
+        msg += (const char*)glewGetErrorString(err);
+        MessageBox(NULL, msg.c_str(), "GLEW Error", MB_OK | MB_ICONERROR);
+        KillGLWindow();
+        return FALSE;
+    }
+
+
+
+
+
+	ShowWindow(hWnd,SW_SHOW);					            // Show The Window
+	SetForegroundWindow(hWnd);					            // Slightly Higher Priority
+	SetFocus(hWnd);							                // Sets Keyboard Focus To The Window
+
+	myScene->initGL();                                      //initialize GL scene
+	myScene->reSizeScene(width, height);
+
+	myMenu->initGL();
+	myMenu->reSizeScene(width, height);
+
+	//ShowCursor(FALSE);
+
+	return TRUE;							                // Success
 }
 
-static void idle(void)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//				THE WINDOW PROCEDURE
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+LRESULT CALLBACK WndProc(
+              HWND	hWnd,			// Handle For This Window
+			  UINT	uMsg,			// Message For This Window
+			  WPARAM wParam,		// Additional Message Information
+			  LPARAM lParam)		// Additional Message Information
 {
-    glutPostRedisplay();
+	switch (uMsg)					// Check For Windows Messages
+	{
+		case WM_ACTIVATE:			// Watch For Window Activate Message
+		{
+			if (!HIWORD(wParam))	// Check Minimization State
+			{
+				active=TRUE;		// Program Is Active
+			}
+			else
+			{
+				active=FALSE;		// Program Is No Longer Active
+			}
+
+			return 0;			    // Return To The Message Loop
+		}
+
+		case WM_SYSCOMMAND:			// Intercept System Commands
+		{
+			switch (wParam)			// Check System Calls
+			{
+				case SC_SCREENSAVE:	// Screensaver Trying To Start?
+				case SC_MONITORPOWER:	// Monitor Trying To Enter Powersave?
+				return 0;	  	    // Prevent From Happening
+			}
+			break;				    // Exit
+		}
+
+		case WM_CLOSE:				// Did We Receive A Close Message?
+		{
+			PostQuitMessage(0);		// Send A Quit Message
+			return 0;			    // Jump Back
+		}
+
+		case WM_KEYDOWN:			// Is A Key Being Held Down?
+		{
+			keys[wParam] = TRUE;	// If So, Mark It As TRUE
+			myScene->winMsg(hWnd, uMsg, wParam, lParam);                //main to scene
+			myMenu->winMsg(hWnd, uMsg, wParam, lParam);
+			return 0;			    // Jump Back
+		}
+
+		case WM_KEYUP:				// Has A Key Been Released?
+		{
+			keys[wParam] = FALSE;	// If So, Mark It As FALSE
+			myScene->winMsg(hWnd, uMsg, wParam, lParam);                //main to scene
+			myMenu->winMsg(hWnd, uMsg, wParam, lParam);
+
+			return 0;			    // Jump Back
+		}
+
+		case WM_SIZE:				// Resize The OpenGL Window
+		{
+		    //cout << "Resize ";      // Prints any time the window is resized
+		    myScene->reSizeScene(LOWORD(lParam), HIWORD(lParam));
+		    myMenu->reSizeScene(LOWORD(lParam), HIWORD(lParam));
+
+                                    // LoWord=Width, HiWord=Height
+			return 0;			    // Jump Back
+		}
+
+		case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_MOUSEMOVE:
+        case WM_MOUSEWHEEL:
+            myScene->winMsg(hWnd, uMsg, wParam, lParam);                //main to scene
+            myMenu->winMsg(hWnd, uMsg, wParam, lParam);
+            break;
+
+	}
+
+
+	// Pass All Unhandled Messages To DefWindowProc
+	return DefWindowProc(hWnd,uMsg,wParam,lParam);
 }
 
-const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
-const GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//				THE WINMAIN
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
-const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
-const GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f };
-const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat high_shininess[] = { 100.0f };
+int WINAPI WinMain(
 
-/* Program entry point */
+            HINSTANCE	hInstance,	    // Instance
+		    HINSTANCE	hPrevInstance,	// Previous Instance
+		    LPSTR	lpCmdLine,		    // Command Line Parameters
+		    int		nCmdShow)	    	// Window Show State
+   {
+ 	MSG	msg;					        // Windows Message Structure
+	BOOL	done=FALSE;				    // Bool Variable To Exit Loop
 
-int main(int argc, char *argv[])
-{
-    glutInit(&argc, argv);
-    glutInitWindowSize(640,480);
-    glutInitWindowPosition(10,10);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+	int	fullscreenWidth  = GetSystemMetrics(SM_CXSCREEN);
+    int	fullscreenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    glutCreateWindow("GLUT Shapes");
+    myMenu->windowHandle = hWnd;
+    myMenu->screenWidth = fullscreenWidth;
+    myMenu->screenHeight = fullscreenHeight;
 
-    glutReshapeFunc(resize);
-    glutDisplayFunc(display);
-    glutKeyboardFunc(key);
-    glutIdleFunc(idle);
+	// Ask The User Which Screen Mode They Prefer
+	//if (MessageBox(NULL,"Would You Like To Run In Fullscreen Mode?", "Start FullScreen?",MB_YESNO|MB_ICONQUESTION)==IDNO)
+	//{
+	//	fullscreen=FALSE;			    // Windowed Mode
+	//}
 
-    glClearColor(1,1,1,1);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+	// Create Our OpenGL Window
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+	if (!CreateGLWindow("Game Engine Lesson 01",fullscreenWidth,fullscreenHeight,256,fullscreen))
+	{
+		return 0;				        // Quit If Window Was Not Created
+	}
 
-    glEnable(GL_LIGHT0);
-    glEnable(GL_NORMALIZE);
-    glEnable(GL_COLOR_MATERIAL);
-    glEnable(GL_LIGHTING);
 
-    glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	while(!done)					    // Loop That Runs While done=FALSE
+	{
+	  if (PeekMessage(&msg,NULL,0,0,PM_REMOVE))	// Is There A Message Waiting?
+		{
+			if (msg.message==WM_QUIT)	// Have We Received A Quit Message?
+			{
+				done=TRUE;		        // If So done=TRUE
+			}
+			else				        // If Not, Deal With Window Messages
+			{
+				TranslateMessage(&msg);	// Translate The Message
+				DispatchMessage(&msg);	// Dispatch The Message
+			}
+		}
 
-    glMaterialfv(GL_FRONT, GL_AMBIENT,   mat_ambient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE,   mat_diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+	  else						        // If There Are No Messages
+		{
+			// Draw The Scene.  Watch For ESC Key And Quit Messages From DrawGLScene()
+			if (!active)// || keys[VK_ESCAPE])	// Active?  Was There A Quit Received?
+			{
+				done=TRUE;		        // ESC or DrawGLScene Signalled A Quit
+			}
+			else				        // Not Time To Quit, Update Screen
+			{
+			    myTimer.updateDeltaTime();                // UPDATE deltaTime ONCE PER FRAME
 
-    glutMainLoop();
+                POINT center;
 
-    return EXIT_SUCCESS;
+                if (keys['N']) {
+                    sceneSwitcher->currentScene = SCENE_GAME;
+                }
+
+
+                switch (sceneSwitcher->currentScene)
+                {
+                    case SCENE_GAME:
+                        myMenu->snds->stopSounds();
+
+                        ShowCursor(FALSE);
+                        myScene->updateScene();                   // update with delta time
+
+
+                        // Center the cursor
+
+                        center.x = fullscreenWidth / 2;
+                        center.y = fullscreenHeight / 2;
+                        SetCursorPos(center.x, center.y);
+
+                        // Update previous mouse positions to the center so next delta is relative
+                        myScene->myInput->prev_MouseX = center.x;
+                        myScene->myInput->prev_MouseY = center.y;
+
+
+                        myScene->drawScene();                     // draw after update
+
+                        if (keys[VK_ESCAPE]) {
+                            sceneSwitcher->currentScene = SCENE_MENU;
+                        }
+
+                        break;
+
+                    case SCENE_MENU:
+                        myMenu->updateScene();                   // update with delta time
+                        myMenu->drawScene();                     // draw after update
+
+                        if (keys['Q']) {
+                            done = TRUE;
+                        }
+                        break;
+                }
+
+				SwapBuffers(hDC);	    // Swap Buffers (Double Buffering)
+			}
+
+			if (keys[VK_F1])		    // Is F1 Being Pressed?
+			{
+				keys[VK_F1]=FALSE;	    // If So Make Key FALSE
+				KillGLWindow();		    // Kill Our Current Window
+				fullscreen=!fullscreen;	// Toggle Fullscreen / Windowed Mode
+
+				// Recreate Our OpenGL Window
+
+				if (!CreateGLWindow("Game Engine Lesson 01",fullscreenWidth,fullscreenHeight,256,fullscreen))
+				{
+					return 0;	        // Quit If Window Was Not Created
+				}
+			}
+		}
+	}
+
+
+	// Shutdown
+	KillGLWindow();					    // Kill The Window
+	return (msg.wParam);				// Exit The Program
 }
