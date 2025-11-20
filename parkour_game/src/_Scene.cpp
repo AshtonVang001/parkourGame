@@ -2,6 +2,8 @@
 #include "gltfModel.h"
 #include "_gltfLoader.h"
 #include <iostream>
+#include <vector>
+#include <cfloat>
 
 _Scene::_Scene()
 {
@@ -23,6 +25,7 @@ _Scene::_Scene()
     snds = nullptr;
 
     myGltfModel = nullptr;
+    platform1 = nullptr;
 }
 
 _Scene::~_Scene()
@@ -42,6 +45,7 @@ _Scene::~_Scene()
     delete myCol;
     delete snds;
     delete myGltfModel;
+    delete platform1;
 }
 
 void _Scene::reSizeScene(int width, int height)
@@ -132,6 +136,16 @@ void _Scene::initGL()
     GLuint texID2 = testTexture->loadTexture("images/pedestal.jpg");
     GLuint texID3 = testTexture->loadTexture("images/bone2.jpg");
 
+
+    // ---- Extra platform (reuse ground model as simple platform instance)
+    platform1 = loader.loadModel("models/ground.glb");
+
+    if (platform1) {
+        // Use ground/test texture instead of the red texture so platform matches scene
+        platform1->textureID = texID;
+        platform1->buildTriangleList();
+        platform1->uploadToGPU();
+    }
     // ---- Bind Model Texture ----
     myGltfModel->textureID = texID;     //monke
     myGltfModel2->textureID = texID3;   //skull
@@ -159,7 +173,7 @@ void _Scene::initGL()
 }
 
 
-
+/*
 void _Scene::updateScene()
 {
     myTime->updateDeltaTime();
@@ -175,6 +189,96 @@ void _Scene::updateScene()
         myInput->keyPressed(myCam, smoothDT);
     }
 }
+*/
+
+
+void _Scene::updateScene()
+{
+    myTime->updateDeltaTime();
+
+    myCam->rotateXY();
+
+    animTime += myTime->deltaTime;
+
+    animTime += myTime->deltaTime;
+
+    // Raycast down from camera to detect ground height
+    vec3 rayStart = myCam->eye;
+    vec3 rayDir   = {0, -1, 0};
+
+    static float smoothDT = 0.16f;
+    smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
+
+
+    float t;
+    vec3 hitPos;
+
+    // Check ground and additional platforms; transform triangles to world space first
+    float bestT = FLT_MAX;
+    vec3 bestHit = {0,0,0};
+    bool anyHit = false;
+
+    // Helper lambda to transform a model's triangles by its node root transform
+    // plus the scene translate/scale, and test raycast against the transformed tris.
+    auto testTransformed = [&](const GltfModel* model,
+                               float sx, float sy, float sz,
+                               float tx, float ty, float tz) {
+        if (!model) return;
+        const auto& srcTris = model->triangles;
+        if (srcTris.empty()) return;
+
+        // Build combined matrix: Mouter = Translate(tx,ty,tz) * Scale(sx,sy,sz)
+        glm::mat4 Mouter = glm::translate(glm::mat4(1.0f), glm::vec3(tx, ty, tz))
+                         * glm::scale(glm::mat4(1.0f), glm::vec3(sx, sy, sz));
+
+        // model root transform (if present)
+        glm::mat4 Mnode = glm::mat4(1.0f);
+        if (!model->nodeGlobalTransforms.empty()) {
+            Mnode = model->nodeGlobalTransforms[0];
+        }
+
+        glm::mat4 M = Mouter * Mnode; // final transform applied to model-space vertices
+
+        std::vector<Triangle> temp;
+        temp.reserve(srcTris.size());
+
+        for (const Triangle& tri : srcTris) {
+            Triangle ttri;
+            glm::vec4 a = M * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+            glm::vec4 b = M * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+            glm::vec4 c = M * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+            ttri.a = { a.x, a.y, a.z };
+            ttri.b = { b.x, b.y, b.z };
+            ttri.c = { c.x, c.y, c.z };
+            temp.push_back(ttri);
+        }
+
+        float localT; vec3 localHit;
+        if (myCol->raycastMeshNearest(rayStart, rayDir, temp, localT, localHit)) {
+            if (localT < bestT) { bestT = localT; bestHit = localHit; anyHit = true; }
+        }
+    };
+
+    // Do not include ground in collision tests; only platform1 is used for collisions
+    // (If you want the ground back later, re-enable building its triangle list.)
+
+    // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
+    if (platform1) testTransformed(platform1, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
+
+    if (anyHit) {
+        // Add a small tolerance so the camera doesn't sink slightly below the platform
+        const float collisionEpsilon = 0.1f; // adjust as needed
+        myCam->groundY = bestHit.y + collisionEpsilon;
+    }
+    else
+        myCam->groundY = -9999;
+
+        if (myInput && myCam) {
+        myInput->keyPressed(myCam, smoothDT);
+        //myCam->update(smoothDT, myCol, ground);
+    }
+}
+
 
 
 void _Scene::drawScene()
@@ -215,6 +319,23 @@ void _Scene::drawScene()
 
     // ---- Draw GLTF Models ----
     glPushMatrix();
+
+    // Draw extra platforms
+    if (platform1) {
+        glPushMatrix();
+            // Left platform (moved further left and forward) - smaller footprint
+            glTranslatef(-8.0f, -3.0f, -8.0f);
+            glScalef(1.0f, 0.3f, 0.5f);
+            glColor3f(1,1,1);
+            if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
+            platform1->draw();
+            if (platform1->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
+        glPopMatrix();
+    }
+
+    // (Only one platform is used now)
+
+    // Ground drawing disabled — only `platform1` should be visible as the single platform
         glTranslatef(0, 0, -20);
         glScalef(1, 1, 1);
         glColor3f(1,1,1);

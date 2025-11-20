@@ -7,13 +7,16 @@
 
 #include <GL/glew.h>
 #include <GL/gl.h>
-
+#include <_common.h>
 #include <cgltf.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+struct Triangle {
+    vec3 a, b, c;
+};
 
 class GltfModel {
 public:
@@ -22,6 +25,8 @@ public:
     std::vector<float> normals;     // nx,ny,nz
     std::vector<float> texcoords;   // u,v
     std::vector<unsigned int> indices;
+    std::vector<Triangle> triangles;
+
 
 
     // GL handles
@@ -48,6 +53,8 @@ public:
 
     // utility: set cgltf_data pointer (call this if loader returned data and you want model to keep it)
     void setCgltfData(cgltf_data* d);
+
+    void buildTriangleList();
 
 private:
     glm::mat4 computeLocalMatrix(const cgltf_node* node) const;

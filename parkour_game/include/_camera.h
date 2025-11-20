@@ -51,6 +51,13 @@ class _camera
 
         float targetY;
         vec3 lookDir;
+        // store camera position at jump start so we can restore after landing
+        vec3 startEye;
+        vec3 startDes;
+        // landing interpolation state
+        bool isLanding = false;
+        float landingTimer = 0.0f;
+        float landingDuration = 0.0f;
 
 
 

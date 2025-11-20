@@ -185,19 +185,19 @@ bool _collisionCheck::rayIntersectTriangle(const vec3& orig, const vec3& dir,
 // Raycast mesh (find nearest triangle hit)
 // -------------------------------------------------------------
 bool _collisionCheck::raycastMeshNearest(const vec3& orig, const vec3& dir,
-                                         const std::vector<vec3>& triangles,
+                                         const std::vector<Triangle>& triangles,
                                          float& hitT, vec3& hitPos)
 {
-    if (triangles.size() % 3 != 0) return false;
-
     bool hit = false;
     float bestT = 1e30f;
 
-    for (size_t i = 0; i < triangles.size(); i += 3)
+    for (size_t i = 0; i < triangles.size(); i++)
     {
+        const Triangle& tri = triangles[i];
         float t, u, v;
+
         if (rayIntersectTriangle(orig, dir,
-                                 triangles[i], triangles[i+1], triangles[i+2],
+                                 tri.a, tri.b, tri.c,
                                  t, u, v))
         {
             if (t < bestT) {

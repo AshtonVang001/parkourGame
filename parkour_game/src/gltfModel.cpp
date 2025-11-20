@@ -357,3 +357,24 @@ void GltfModel::draw() {
     }
 }
 
+void GltfModel::buildTriangleList()
+{
+    triangles.clear();
+
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        int i0 = indices[i];
+        int i1 = indices[i+1];
+        int i2 = indices[i+2];
+
+        vec3 v0{vertices[i0*3+0], vertices[i0*3+1], vertices[i0*3+2]};
+        vec3 v1{vertices[i1*3+0], vertices[i1*3+1], vertices[i1*3+2]};
+        vec3 v2{vertices[i2*3+0], vertices[i2*3+1], vertices[i2*3+2]};
+        Triangle t;
+        t.a = v0;
+        t.b = v1;
+        t.c = v2;
+        triangles.push_back(t);
+    }
+}
+
+

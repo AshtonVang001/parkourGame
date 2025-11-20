@@ -30,6 +30,8 @@ void _camera::camInit()
     isJumping = false;
     gravity = -40.0f;
     groundY = eye.y;
+    startEye = eye;
+    startDes = des;
 
 
 }
@@ -129,6 +131,9 @@ void _camera::jump()
     if (!isJumping) {
         verticalVel = 15.0f;   // jump strength
         isJumping = true;
+        // store starting camera position to restore after landing
+        startEye = eye;
+        startDes = des;
     }
 }
 
@@ -145,10 +150,43 @@ void _camera::updateVertical(float deltaTime)
             nextY = groundY;
             verticalVel = 0.0f;
             isJumping = false;
+            // Start a short smooth return to the starting pose instead of snapping
+            // initialize landing interpolation
+            landingTimer = 0.0f;
+            landingDuration = 0.12f; // seconds to lerp back
+            isLanding = true;
         }
 
         eye.y = nextY;
 
         des = eye + lookDir;
     }
+    else if (isLanding)
+    {
+        // Smoothly interpolate camera from current pose back to startEye/startDes
+        landingTimer += deltaTime;
+        float t = landingTimer / landingDuration;
+        if (t >= 1.0f) {
+            // finish interpolation
+            eye = startEye;
+            des = startDes;
+            isLanding = false;
+        } else {
+            // lerp each component
+            eye.x = lerp(eye.x, startEye.x, t);
+            eye.y = lerp(eye.y, startEye.y, t);
+            eye.z = lerp(eye.z, startEye.z, t);
+
+            des.x = lerp(des.x, startDes.x, t);
+            des.y = lerp(des.y, startDes.y, t);
+            des.z = lerp(des.z, startDes.z, t);
+        }
+        // ensure lookDir matches des - eye
+        lookDir = des - eye;
+    }
+}
+
+float _camera::lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
 }

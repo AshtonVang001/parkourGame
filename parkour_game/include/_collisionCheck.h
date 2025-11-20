@@ -4,6 +4,7 @@
 #include <_common.h>
 #include <vector>
 #include <cmath>
+#include <gltfModel.h>
 
 class _collisionCheck
 {
@@ -33,8 +34,8 @@ public:
                               float& outT, float& outU, float& outV);
 
     bool raycastMeshNearest(const vec3& orig, const vec3& dir,
-                            const std::vector<vec3>& triangles,
-                            float& hitT, vec3& hitPos);
+                        const std::vector<Triangle>& triangles,
+                        float& hitT, vec3& hitPos);
 
     float pointPlaneSignedDistance(const vec3& point,
                                    const vec3& planePoint,
