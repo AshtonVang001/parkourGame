@@ -274,7 +274,75 @@ void _Scene::updateScene()
         myCam->groundY = -9999;
 
         if (myInput && myCam) {
+        // Save previous camera position so we can test the swept segment
+        vec3 prevEye = myCam->eye;
+
+        // Let input try to move the camera
         myInput->keyPressed(myCam, smoothDT);
+
+        // New camera position after input
+        vec3 newEye = myCam->eye;
+
+        // Compute movement vector
+        glm::vec3 prevG(prevEye.x, prevEye.y, prevEye.z);
+        glm::vec3 newG(newEye.x, newEye.y, newEye.z);
+        glm::vec3 move = newG - prevG;
+        float moveLen = glm::length(move);
+
+        const float moveEps = 1e-6f;
+        const float clampEps = 0.1f; // how far from the hit point the camera should stop
+
+        if (moveLen > moveEps && platform1 && myCol) {
+            glm::vec3 dir = move / moveLen; // normalized movement direction
+
+            // Build transformed triangle list for platform1 (same transform used in draw())
+            std::vector<Triangle> temp;
+            const auto& srcTris = platform1->triangles;
+            temp.reserve(srcTris.size());
+
+            // Outer transform applied in draw: Translate(-8,-3,-8) then Scale(1,0.3,0.5)
+            glm::mat4 Mouter = glm::translate(glm::mat4(1.0f), glm::vec3(-8.0f, -3.0f, -8.0f))
+                             * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+
+            // model node transform if present
+            glm::mat4 Mnode = glm::mat4(1.0f);
+            if (!platform1->nodeGlobalTransforms.empty()) Mnode = platform1->nodeGlobalTransforms[0];
+
+            glm::mat4 M = Mouter * Mnode;
+
+            for (const Triangle& tri : srcTris) {
+                Triangle ttri;
+                glm::vec4 a = M * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                glm::vec4 b = M * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                glm::vec4 c = M * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                ttri.a = { a.x, a.y, a.z };
+                ttri.b = { b.x, b.y, b.z };
+                ttri.c = { c.x, c.y, c.z };
+                temp.push_back(ttri);
+            }
+
+            // Convert to project vec3 and raycast from previous position along movement dir
+            vec3 rayStart = prevEye;
+            vec3 rayDir = { dir.x, dir.y, dir.z };
+
+            float hitT = 0.0f;
+            vec3 hitPos = {0,0,0};
+
+            if ( myCol->raycastMeshNearest(rayStart, rayDir, temp, hitT, hitPos) ) {
+                // If the hit occurs within our movement length, clamp camera to just before hit
+                if (hitT <= moveLen + 1e-4f) {
+                    myCam->eye.x = hitPos.x - dir.x * clampEps;
+                    myCam->eye.y = hitPos.y - dir.y * clampEps;
+                    myCam->eye.z = hitPos.z - dir.z * clampEps;
+
+                    // keep look direction consistent
+                    myCam->des.x = myCam->eye.x + myCam->lookDir.x;
+                    myCam->des.y = myCam->eye.y + myCam->lookDir.y;
+                    myCam->des.z = myCam->eye.z + myCam->lookDir.z;
+                }
+            }
+        }
+
         //myCam->update(smoothDT, myCol, ground);
     }
 }
