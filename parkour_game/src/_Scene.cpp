@@ -146,6 +146,12 @@ void _Scene::initGL()
         platform1->buildTriangleList();
         platform1->uploadToGPU();
     }
+    // Build triangle lists for other models so we can use them for collisions
+    if (myGltfModel) myGltfModel->buildTriangleList();
+    if (myGltfModel2) myGltfModel2->buildTriangleList();
+    if (ground) ground->buildTriangleList();
+    if (pedestalBase) pedestalBase->buildTriangleList();
+    if (pedestal) pedestal->buildTriangleList();
     // ---- Bind Model Texture ----
     myGltfModel->textureID = texID;     //monke
     myGltfModel2->textureID = texID3;   //skull
@@ -218,18 +224,13 @@ void _Scene::updateScene()
     vec3 bestHit = {0,0,0};
     bool anyHit = false;
 
-    // Helper lambda to transform a model's triangles by its node root transform
-    // plus the scene translate/scale, and test raycast against the transformed tris.
-    auto testTransformed = [&](const GltfModel* model,
-                               float sx, float sy, float sz,
-                               float tx, float ty, float tz) {
+    // Helper lambda to transform a model's triangles by a given outer matrix (which
+    // should include translate/scale/rotate order matching draw calls), then test
+    // raycast against the transformed triangles.
+    auto testTransformedM = [&](const GltfModel* model, const glm::mat4& Mouter) {
         if (!model) return;
         const auto& srcTris = model->triangles;
         if (srcTris.empty()) return;
-
-        // Build combined matrix: Mouter = Translate(tx,ty,tz) * Scale(sx,sy,sz)
-        glm::mat4 Mouter = glm::translate(glm::mat4(1.0f), glm::vec3(tx, ty, tz))
-                         * glm::scale(glm::mat4(1.0f), glm::vec3(sx, sy, sz));
 
         // model root transform (if present)
         glm::mat4 Mnode = glm::mat4(1.0f);
@@ -263,7 +264,48 @@ void _Scene::updateScene()
     // (If you want the ground back later, re-enable building its triangle list.)
 
     // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
-    if (platform1) testTransformed(platform1, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
+    if (platform1) {
+        glm::mat4 Mplat = glm::translate(glm::mat4(1.0f), glm::vec3(-8.0f, -3.0f, -8.0f))
+                        * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+        testTransformedM(platform1, Mplat);
+    }
+
+    // skulls (myGltfModel2) - two instances that are animated in drawScene
+    float tnow = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    float localYOffset = amplitude * sin(tnow * speed);
+    if (myGltfModel2) {
+        // first skull at (4.5, 7 + yOffset, -16) with scale 1.6 and rotations -20 Y, 30 X
+        glm::mat4 Msk1 = glm::translate(glm::mat4(1.0f), glm::vec3(4.5f, 7.0f + localYOffset, -16.0f))
+                       * glm::scale(glm::mat4(1.0f), glm::vec3(1.6f, 1.6f, 1.6f))
+                       * glm::rotate(glm::mat4(1.0f), glm::radians(-20.0f), glm::vec3(0,1,0))
+                       * glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::vec3(1,0,0));
+        testTransformedM(myGltfModel2, Msk1);
+
+        // second skull at (-4.5, 7 - yOffset, -16) with scale 1.6 and rotations 20 Y, 30 X
+        glm::mat4 Msk2 = glm::translate(glm::mat4(1.0f), glm::vec3(-4.5f, 7.0f - localYOffset, -16.0f))
+                       * glm::scale(glm::mat4(1.0f), glm::vec3(1.6f, 1.6f, 1.6f))
+                       * glm::rotate(glm::mat4(1.0f), glm::radians(20.0f), glm::vec3(0,1,0))
+                       * glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::vec3(1,0,0));
+        testTransformedM(myGltfModel2, Msk2);
+    }
+
+    // level / ground / pedestal transforms
+    if (ground) {
+        glm::mat4 Mground = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.0f, 0.0f))
+                             * glm::scale(glm::mat4(1.0f), glm::vec3(levelScale, levelScale, levelScale))
+                             * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0,1,0));
+        testTransformedM(ground, Mground);
+    }
+    if (pedestalBase) {
+        glm::mat4 Mpb = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.0f, 0.0f))
+                       * glm::scale(glm::mat4(1.0f), glm::vec3(levelScale, levelScale, levelScale));
+        testTransformedM(pedestalBase, Mpb);
+    }
+    if (pedestal) {
+        glm::mat4 Mp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.0f, 0.0f))
+                       * glm::scale(glm::mat4(1.0f), glm::vec3(levelScale, levelScale, levelScale));
+        testTransformedM(pedestal, Mp);
+    }
 
     if (anyHit) {
         // Add a small tolerance so the camera doesn't sink slightly below the platform
@@ -292,33 +334,132 @@ void _Scene::updateScene()
         const float moveEps = 1e-6f;
         const float clampEps = 0.1f; // how far from the hit point the camera should stop
 
-        if (moveLen > moveEps && platform1 && myCol) {
+        if (moveLen > moveEps && myCol) {
             glm::vec3 dir = move / moveLen; // normalized movement direction
 
-            // Build transformed triangle list for platform1 (same transform used in draw())
+            // Build a combined transformed triangle list for all scene models we want to collide with
             std::vector<Triangle> temp;
-            const auto& srcTris = platform1->triangles;
-            temp.reserve(srcTris.size());
 
-            // Outer transform applied in draw: Translate(-8,-3,-8) then Scale(1,0.3,0.5)
-            glm::mat4 Mouter = glm::translate(glm::mat4(1.0f), glm::vec3(-8.0f, -3.0f, -8.0f))
-                             * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+            // platform1
+            if (platform1) {
+                const auto& srcTris = platform1->triangles;
+                glm::mat4 Mplat = glm::translate(glm::mat4(1.0f), glm::vec3(-8.0f, -3.0f, -8.0f))
+                                * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+                glm::mat4 Mnode = glm::mat4(1.0f);
+                if (!platform1->nodeGlobalTransforms.empty()) Mnode = platform1->nodeGlobalTransforms[0];
+                glm::mat4 M = Mplat * Mnode;
+                for (const Triangle& tri : srcTris) {
+                    Triangle ttri;
+                    glm::vec4 a = M * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                    glm::vec4 b = M * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                    glm::vec4 c = M * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                    ttri.a = { a.x, a.y, a.z };
+                    ttri.b = { b.x, b.y, b.z };
+                    ttri.c = { c.x, c.y, c.z };
+                    temp.push_back(ttri);
+                }
+            }
 
-            // model node transform if present
-            glm::mat4 Mnode = glm::mat4(1.0f);
-            if (!platform1->nodeGlobalTransforms.empty()) Mnode = platform1->nodeGlobalTransforms[0];
+            // skulls (animated) - use current elapsed time for offsets
+            float tnow = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+            float localYOffset = amplitude * sin(tnow * speed);
+            if (myGltfModel2) {
+                const auto& srcTris2 = myGltfModel2->triangles;
 
-            glm::mat4 M = Mouter * Mnode;
+                glm::mat4 Msk1 = glm::translate(glm::mat4(1.0f), glm::vec3(4.5f, 7.0f + localYOffset, -16.0f))
+                               * glm::scale(glm::mat4(1.0f), glm::vec3(1.6f, 1.6f, 1.6f))
+                               * glm::rotate(glm::mat4(1.0f), glm::radians(-20.0f), glm::vec3(0,1,0))
+                               * glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::vec3(1,0,0));
+                glm::mat4 Mnode2 = glm::mat4(1.0f);
+                if (!myGltfModel2->nodeGlobalTransforms.empty()) Mnode2 = myGltfModel2->nodeGlobalTransforms[0];
+                glm::mat4 M1 = Msk1 * Mnode2;
+                for (const Triangle& tri : srcTris2) {
+                    Triangle ttri;
+                    glm::vec4 a = M1 * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                    glm::vec4 b = M1 * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                    glm::vec4 c = M1 * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                    ttri.a = { a.x, a.y, a.z };
+                    ttri.b = { b.x, b.y, b.z };
+                    ttri.c = { c.x, c.y, c.z };
+                    temp.push_back(ttri);
+                }
 
-            for (const Triangle& tri : srcTris) {
-                Triangle ttri;
-                glm::vec4 a = M * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
-                glm::vec4 b = M * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
-                glm::vec4 c = M * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
-                ttri.a = { a.x, a.y, a.z };
-                ttri.b = { b.x, b.y, b.z };
-                ttri.c = { c.x, c.y, c.z };
-                temp.push_back(ttri);
+                glm::mat4 Msk2 = glm::translate(glm::mat4(1.0f), glm::vec3(-4.5f, 7.0f - localYOffset, -16.0f))
+                               * glm::scale(glm::mat4(1.0f), glm::vec3(1.6f, 1.6f, 1.6f))
+                               * glm::rotate(glm::mat4(1.0f), glm::radians(20.0f), glm::vec3(0,1,0))
+                               * glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::vec3(1,0,0));
+                glm::mat4 M2 = Msk2 * Mnode2;
+                for (const Triangle& tri : srcTris2) {
+                    Triangle ttri;
+                    glm::vec4 a = M2 * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                    glm::vec4 b = M2 * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                    glm::vec4 c = M2 * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                    ttri.a = { a.x, a.y, a.z };
+                    ttri.b = { b.x, b.y, b.z };
+                    ttri.c = { c.x, c.y, c.z };
+                    temp.push_back(ttri);
+                }
+            }
+
+            // ground
+            if (ground) {
+                const auto& srcTrisG = ground->triangles;
+                glm::mat4 Mground = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.0f, 0.0f))
+                                     * glm::scale(glm::mat4(1.0f), glm::vec3(levelScale, levelScale, levelScale))
+                                     * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0,1,0));
+                glm::mat4 MnodeG = glm::mat4(1.0f);
+                if (!ground->nodeGlobalTransforms.empty()) MnodeG = ground->nodeGlobalTransforms[0];
+                glm::mat4 MG = Mground * MnodeG;
+                for (const Triangle& tri : srcTrisG) {
+                    Triangle ttri;
+                    glm::vec4 a = MG * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                    glm::vec4 b = MG * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                    glm::vec4 c = MG * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                    ttri.a = { a.x, a.y, a.z };
+                    ttri.b = { b.x, b.y, b.z };
+                    ttri.c = { c.x, c.y, c.z };
+                    temp.push_back(ttri);
+                }
+            }
+
+            // pedestal base
+            if (pedestalBase) {
+                const auto& srcTrisP = pedestalBase->triangles;
+                glm::mat4 Mpb = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.0f, 0.0f))
+                               * glm::scale(glm::mat4(1.0f), glm::vec3(levelScale, levelScale, levelScale));
+                glm::mat4 MnodeP = glm::mat4(1.0f);
+                if (!pedestalBase->nodeGlobalTransforms.empty()) MnodeP = pedestalBase->nodeGlobalTransforms[0];
+                glm::mat4 MPB = Mpb * MnodeP;
+                for (const Triangle& tri : srcTrisP) {
+                    Triangle ttri;
+                    glm::vec4 a = MPB * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                    glm::vec4 b = MPB * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                    glm::vec4 c = MPB * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                    ttri.a = { a.x, a.y, a.z };
+                    ttri.b = { b.x, b.y, b.z };
+                    ttri.c = { c.x, c.y, c.z };
+                    temp.push_back(ttri);
+                }
+            }
+
+            // pedestal
+            if (pedestal) {
+                const auto& srcTrisPP = pedestal->triangles;
+                glm::mat4 Mp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.0f, 0.0f))
+                               * glm::scale(glm::mat4(1.0f), glm::vec3(levelScale, levelScale, levelScale));
+                glm::mat4 MnodePP = glm::mat4(1.0f);
+                if (!pedestal->nodeGlobalTransforms.empty()) MnodePP = pedestal->nodeGlobalTransforms[0];
+                glm::mat4 MPP = Mp * MnodePP;
+                for (const Triangle& tri : srcTrisPP) {
+                    Triangle ttri;
+                    glm::vec4 a = MPP * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
+                    glm::vec4 b = MPP * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
+                    glm::vec4 c = MPP * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
+                    ttri.a = { a.x, a.y, a.z };
+                    ttri.b = { b.x, b.y, b.z };
+                    ttri.c = { c.x, c.y, c.z };
+                    temp.push_back(ttri);
+                }
             }
 
             // Convert to project vec3 and raycast from previous position along movement dir
@@ -328,7 +469,7 @@ void _Scene::updateScene()
             float hitT = 0.0f;
             vec3 hitPos = {0,0,0};
 
-            if ( myCol->raycastMeshNearest(rayStart, rayDir, temp, hitT, hitPos) ) {
+            if (!temp.empty() && myCol->raycastMeshNearest(rayStart, rayDir, temp, hitT, hitPos)) {
                 // If the hit occurs within our movement length, clamp camera to just before hit
                 if (hitT <= moveLen + 1e-4f) {
                     myCam->eye.x = hitPos.x - dir.x * clampEps;
