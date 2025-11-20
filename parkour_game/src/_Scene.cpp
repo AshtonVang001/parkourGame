@@ -121,18 +121,23 @@ void _Scene::initGL()
     snds->playSound("sounds/untitled.mp3");
 
     // ---- Load GLTF Model ----
-    myGltfModel = loader.loadModel("models/monkE1.glb");
-    myGltfModel2 = loader.loadModel("models/cuberotate.glb");
-    ground = loader.loadModel("models/ground.glb");
+    myGltfModel = loader.loadModel("models/monkE3.glb");
+    myGltfModel2 = loader.loadModel("models/catSkull.glb");
+    ground = loader.loadModel("models/levelFloor.glb");
+    pedestalBase = loader.loadModel("models/levelPedestalBase.glb");
+    pedestal = loader.loadModel("models/levelPedestal.glb");
 
     // ---- Load Model Texture ----
     GLuint texID = testTexture->loadTexture("images/test_texture.jpg");
-    GLuint texID2 = testTexture->loadTexture("images/red.png");
+    GLuint texID2 = testTexture->loadTexture("images/pedestal.jpg");
+    GLuint texID3 = testTexture->loadTexture("images/bone2.jpg");
 
     // ---- Bind Model Texture ----
-    myGltfModel->textureID = texID;
-    myGltfModel2->textureID = texID2;
-    ground->textureID = texID;
+    myGltfModel->textureID = texID;     //monke
+    myGltfModel2->textureID = texID3;   //skull
+    ground->textureID = texID2;
+    pedestalBase->textureID = texID2;
+    pedestal->textureID = texID2;
 
     if (!myGltfModel) {
         std::cerr << "GLTF: Failed to load model\n";
@@ -162,14 +167,12 @@ void _Scene::updateScene()
     static float smoothDT = 0.16f;
     smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
 
-    //myCam->updateVertical(myTime->deltaTime);     ----OLD----
     myCam->rotateXY();
 
     animTime += myTime->deltaTime;
 
     if (myInput && myCam) {
         myInput->keyPressed(myCam, smoothDT);
-        //myCam->update(smoothDT, myCol, ground);       ----OLD----
     }
 }
 
@@ -179,7 +182,7 @@ void _Scene::drawScene()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)width / (float)height;
-    gluPerspective(fov, aspect, 0.1f, 1000.0f);
+    gluPerspective(fov, aspect, 0.1f, 10000.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -192,104 +195,77 @@ void _Scene::drawScene()
     glDisable(GL_BLEND);
     glEnable(GL_TEXTURE_2D);
 
-
-
-
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
+
     // ---- Camera ----
     myCam->setUpCamera();
 
-    // ---- Background parallax ----
+
+    // ---- Skybox ----
     glPushMatrix();
         glScalef(4.33f, 4.33f, 1.0f);
-        myPrlx->prlxScrollAuto("left", 0.001f);
         mySkyBox->drawSkyBox();
     glPopMatrix();
 
-    // ---- Sprite animation ----
-    glPushMatrix();
-        if (myTime->getTicks() > 70) {
-            mySprite->spriteActions();
-            myTime->reset();
-        }
-    glPopMatrix();
-
-    // ---- 3D MD2 Character ----
-    glPushMatrix();
-        glRotatef(90, 1, 0, 0);
-        glRotatef(180, 0, 1, 0);
-        glScalef(0.1f, 0.1f, 0.1f);
-
-        mdl3D->Actions();
-        //mdl3D->Draw();
-        //mdl3DW->Draw();
-    glPopMatrix();
-
-    // ---- Bullets ----
-    glPushMatrix();
-    for (int i = 0; i < 10; i++) {
-        if (b[i].isAlive) {
-            b[i].drawBullet();
-            b[i].bulletActions();
-        }
-    }
-    glPopMatrix();
 
     // ---- Draw GLTF Models ----
-    if (myGltfModel) {
-        glPushMatrix();
-            glTranslatef(0, 0, -20);
-            glScalef(1, 1, 1); // Adjust size
-            glColor3f(1,1,1);
-
-            if (myGltfModel->textureID != 0) {
-                glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, myGltfModel->textureID);
-            }
-
-            myGltfModel->draw();
-
-            if (myGltfModel->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
-        glPopMatrix();
-    }
-
-
-    if (myGltfModel2) {
     glPushMatrix();
-        glTranslatef(5, 0, -20);   // pos
-        glScalef(1, 1, 1);         // scale
-        glColor3f(1, 1, 1);
-
-        // ---- Bind texture ----
-        if (myGltfModel2->textureID != 0) {
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, myGltfModel2->textureID);
-        }
-
-        // ---- Update animation every frame ----
-        if (myGltfModel2->data && myGltfModel2->data->animations_count > 0) {
-            myGltfModel2->updateAnimation(animTime);
-        }
-
-        // ---- Draw all nodes recursively ----
-        myGltfModel2->draw();
-
-        // ---- Unbind texture ----
-        if (myGltfModel2->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
-            glPopMatrix();
-    }
-
-    glPushMatrix();
-        glTranslatef(0, -3, 0);
+        glTranslatef(0, 0, -20);
         glScalef(1, 1, 1);
         glColor3f(1,1,1);
+        //myGltfModel->draw();
+    glPopMatrix();
+
+    //animate skull up & down
+    time = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    yOffset = amplitude * sin(time * speed);
+
+    //skulls
+    glPushMatrix();
+        glTranslatef(4.5, 7 + yOffset, -16);
+        glScalef(1.6, 1.6, 1.6);
+        glColor3f(1,1,1);
+        glRotatef(-20, 0, 1, 0);
+        glRotatef(30, 1, 0, 0);
+        myGltfModel2->draw();
+    glPopMatrix();
+
+    glPushMatrix();
+        glTranslatef(-4.5, 7 - yOffset, -16);
+        glScalef(1.6, 1.6, 1.6);
+        glColor3f(1,1,1);
+        glRotatef(20, 0, 1, 0);
+        glRotatef(30, 1, 0, 0);
+        myGltfModel2->draw();
+    glPopMatrix();
+
+
+    //level
+    glPushMatrix();
+        glTranslatef(0, -4, 0);
+        glScalef(levelScale, levelScale, levelScale);
+        glColor3f(1,1,1);
+        glRotatef(180, 0, 1, 0);
         ground->draw();
+    glPopMatrix();
+
+    glPushMatrix();
+        glTranslatef(0, -4, 0);
+        glScalef(levelScale, levelScale, levelScale);
+        glColor3f(1,1,1);
+        pedestalBase->draw();
+    glPopMatrix();
+
+    glPushMatrix();
+        glTranslatef(0, -4, 0);
+        glScalef(levelScale, levelScale, levelScale);
+        glColor3f(1,1,1);
+        pedestal->draw();
     glPopMatrix();
 }
 

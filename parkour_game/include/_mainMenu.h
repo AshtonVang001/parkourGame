@@ -41,19 +41,17 @@ public:
 
 
 
-    // Current offset of the background
+
+
+
     float bgOffsetX = 0.0f;
     float bgOffsetY = 0.0f;
 
-    // Target offset (where it wants to move based on mouse)
     float bgTargetX = 0.0f;
     float bgTargetY = 0.0f;
 
-    // Speed of movement (0 < speed <= 1)
     float bgMoveSpeed = 0.005f;
-
-    // Image scale relative to screen (1.0 = fits exactly)
-    float bgScale = 1.02f; // 10% larger than screen
+    float bgScale = 1.02f;
 
     float bgDelayTimer = 0.0f;
     float bgDelayDuration = 1.0f;
@@ -65,44 +63,33 @@ public:
     int screenHeight;
     HWND windowHandle;
 
-
     bool helpOpen = false;
 
 
 
+
+    _timer *myTime;
+    _light *myLight;
+    _inputs *myInput;
+    _camera *myCam;
+    _sounds *snds;
+
+
+    //load UI textures;
     _textureLoader *menuTex = new _textureLoader();
     _textureLoader *menuUI = new _textureLoader();
     _textureLoader *helpMenuTex = new _textureLoader();
     _textureLoader *helpMenuUI = new _textureLoader();
 
 
-    _timer *myTime;
-
-    _light *myLight;
-    _model *myModel;
-    _inputs *myInput;
-    _textureLoader *myTexture;
-    _parallax *myPrlx;
-    _skyBox *mySkyBox;
-    _sprite *mySprite;
-    _3DModelLoader *mdl3D;
-    _3DModelLoader *mdl3DW;
-    _camera *myCam;
-    _collisionCheck *myCol;
-    _sounds *snds;
-
-    _bullets b[10];
 
     //load models
     _gltfLoader loader;
     GltfModel* myGltfModel;
-    GltfModel* myGltfModel2;
-    GltfModel* ground;
 
     //load model texture
     _textureLoader *testTexture = new _textureLoader();
-    _textureLoader *testTexture2 = new _textureLoader();
-    _textureLoader *groundTexture = new _textureLoader();
+
 
 
 protected:

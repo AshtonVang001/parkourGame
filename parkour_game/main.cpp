@@ -443,6 +443,13 @@ int WINAPI WinMain(
                             sceneSwitcher->currentScene = SCENE_MENU;
                         }
 
+                        if (keys[VK_SHIFT]) {
+                            myScene->fov = 65.0f;
+                        }
+                        else {
+                            myScene->fov = 60.0f;
+                        }
+
                         break;
 
                     case SCENE_MENU:

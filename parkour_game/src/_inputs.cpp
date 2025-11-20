@@ -19,10 +19,12 @@ void _inputs::keyPressed(_camera* myCamera, float deltaTime)
 
 
     float moveSpeed = 40.0f * deltaTime;
+    //newFov = 60.0f;
 
     // ---- Sprint ----
     if (keys[16])
         moveSpeed *= 1.5;
+        //newFov = 75.0f;
 
     // ---- Forward / Back ----
     if (keys['W'])
