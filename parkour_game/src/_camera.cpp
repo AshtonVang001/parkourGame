@@ -28,7 +28,7 @@ void _camera::camInit()
 
     verticalVel = 0.0f;
     isJumping = false;
-    gravity = -40.0f;   // stronger than real gravity for game feel
+    gravity = -40.0f;
     groundY = eye.y;
     startEye = eye;
     startDes = des;
@@ -55,7 +55,7 @@ void _camera::camReset()
 
 void _camera::rotateXY()
 {
-    // Clamp pitch
+    // ---- Clamp pitch ----
     if (rotAngle.y > 89.0f) rotAngle.y = 89.0f;
     if (rotAngle.y < -89.0f) rotAngle.y = -89.0f;
 
@@ -77,7 +77,7 @@ void _camera::rotateUp()
 
 void _camera::camMoveFdBd(float dir)
 {
-    // Forward vector (ignore Y)
+    // ---- Forward vector ----
     vec3 forward = des - eye;
     forward.y = 0;
     float len = sqrt(forward.x*forward.x + forward.z*forward.z);
@@ -87,7 +87,7 @@ void _camera::camMoveFdBd(float dir)
         forward.z /= len;
     }
 
-    // Move in the correct direction: W = +dir
+    // ---- Move W = +dir ----
     eye.x += forward.x * dir;
     eye.z += forward.z * dir;
     des.x += forward.x * dir;
@@ -96,7 +96,7 @@ void _camera::camMoveFdBd(float dir)
 
 void _camera::camMoveLtRt(float dir)
 {
-    // Forward vector (ignore Y)
+    // ---- Forward vector ----
     vec3 forward = des - eye;
     forward.y = 0;
     float len = sqrt(forward.x*forward.x + forward.z*forward.z);
@@ -106,13 +106,13 @@ void _camera::camMoveLtRt(float dir)
         forward.z /= len;
     }
 
-    // Right vector (perpendicular in XZ plane)
+    // ---- Right vector ----
     vec3 right;
     right.x = forward.z;
     right.y = 0;
     right.z = -forward.x;
 
-    // Move in the correct direction: D = +dir, A = -dir
+    // ---- Move D = +dir, A = -dir ----
     eye.x += right.x * dir;
     eye.z += right.z * dir;
     des.x += right.x * dir;
@@ -159,7 +159,6 @@ void _camera::updateVertical(float deltaTime)
 
         eye.y = nextY;
 
-        // do NOT modify des.y
         des = eye + lookDir;
     }
     else if (isLanding)

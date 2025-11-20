@@ -7,18 +7,10 @@ _mainMenu::_mainMenu()
 {
     myTime = new _timer();
 
-    // Set all pointers null until initGL()
+    // ---- Set all pointers null until initGL() ----
     myLight = nullptr;
-    myModel = nullptr;
     myInput = nullptr;
-    myTexture = nullptr;
-    myPrlx = nullptr;
-    mySkyBox = nullptr;
-    mySprite = nullptr;
-    mdl3D = nullptr;
-    mdl3DW = nullptr;
     myCam = nullptr;
-    myCol = nullptr;
     snds = nullptr;
 
     myGltfModel = nullptr;
@@ -29,16 +21,8 @@ _mainMenu::~_mainMenu()
     delete myTime;
 
     delete myLight;
-    delete myModel;
     delete myInput;
-    delete myTexture;
-    delete myPrlx;
-    delete mySkyBox;
-    delete mySprite;
-    delete mdl3D;
-    delete mdl3DW;
     delete myCam;
-    delete myCol;
     delete snds;
     delete myGltfModel;
 }
@@ -75,16 +59,8 @@ void _mainMenu::initGL()
 
     // ---- Create subsystems ----
     myLight  = new _light();
-    myModel  = new _model();
     myInput  = new _inputs();
-    myTexture = new _textureLoader();
-    myPrlx   = new _parallax();
-    mySkyBox = new _skyBox();
-    mySprite = new _sprite();
-    mdl3D    = new _3DModelLoader();
-    mdl3DW   = new _3DModelLoader();
     myCam    = new _camera();
-    myCol    = new _collisionCheck();
     snds     = new _sounds();
 
     myTime->startTime = clock();
@@ -98,8 +74,10 @@ void _mainMenu::initGL()
     // ---- Sounds ----
     snds->initSounds();
     snds->eng->setSoundVolume(0.2f);
-    snds->playSound("sounds/gameThemeForClass2.mp3");
+    snds->playMusic("sounds/gameThemeForClass2.mp3");
 
+
+    // ---- Load UI Textures
     menuTex->loadTexture("images/menuTexture.png");
     menuUI->loadTexture("images/menuUI.png");
     helpMenuTex->loadTexture("images/helpMenu.png");
@@ -115,14 +93,14 @@ void _mainMenu::updateScene()
     static float smoothDT = 0.16f;
     smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
 
-    //myCam->updateVertical(myTime->deltaTime);
+    //myCam->updateVertical(myTime->deltaTime);         ----OLD----
     myCam->rotateXY();
 
     animTime += myTime->deltaTime;
 
     if (myInput && myCam) {
         myInput->keyPressed(myCam, smoothDT);
-        //myCam->update(smoothDT, myCol, ground);
+        //myCam->update(smoothDT, myCol, ground);       ----OLD----
     }
 
     bgOffsetX += (bgTargetX - bgOffsetX) * bgMoveSpeed;
@@ -130,7 +108,7 @@ void _mainMenu::updateScene()
 
     POINT cursor;
     GetCursorPos(&cursor);
-    ScreenToClient(windowHandle, &cursor); // convert to window coords if needed
+    ScreenToClient(windowHandle, &cursor);
 
     updateBackgroundOffset(deltaTime, windowHandle, screenWidth, screenHeight);
 }
@@ -155,7 +133,7 @@ void _mainMenu::drawScene()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Compute quad coordinates with scale and offset
+    // ---- Compute quad coordinates with scale and offset ----
     float halfScaleX = bgScale / 2.0f;
     float halfScaleY = bgScale / 2.0f;
 
@@ -165,10 +143,10 @@ void _mainMenu::drawScene()
     float top    = 0.5f + halfScaleY + bgOffsetY;
 
     glBegin(GL_QUADS);
-        glTexCoord2f(0, 1); glVertex2f(left, bottom);
-        glTexCoord2f(1, 1); glVertex2f(right, bottom);
-        glTexCoord2f(1, 0); glVertex2f(right, top);
-        glTexCoord2f(0, 0); glVertex2f(left, top);
+        glTexCoord2f(0, 1); glVertex3f(left, bottom, -1.0f);
+        glTexCoord2f(1, 1); glVertex3f(right, bottom, -1.0f);
+        glTexCoord2f(1, 0); glVertex3f(right, top, -1.0f);
+        glTexCoord2f(0, 0); glVertex3f(left, top, -1.0f);
     glEnd();
 
     glEnable(GL_DEPTH_TEST);
@@ -183,7 +161,7 @@ void _mainMenu::drawScene()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // setup orthographic projection for 0..1 screen space
+    // ---- setup orthographic projection for 0..1 screen space ----
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -193,10 +171,10 @@ void _mainMenu::drawScene()
     glPushMatrix();
     glLoadIdentity();
 
-    // bind the logo texture
+    // ---- bind the logo texture ----
     menuUI->bindTexture();
 
-    // draw quad
+    // ---- draw quad ----
     float logoWidth  = 0.3f;
     float logoHeight = 0.2f;
     float logoLeft   = 0.5f - logoWidth / 2.0f;
@@ -211,7 +189,7 @@ void _mainMenu::drawScene()
         glTexCoord2f(0, 0); glVertex2f(0, 1);
     glEnd();
 
-    // restore projection/modelview
+    // ---- restore projection/modelview ----
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -243,7 +221,7 @@ void _mainMenu::drawScene()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        // Compute quad coordinates with scale and offset
+        // ---- Compute quad coordinates with scale and offset ----
         float halfScaleX = bgScale / 2.0f;
         float halfScaleY = bgScale / 2.0f;
 
@@ -253,10 +231,10 @@ void _mainMenu::drawScene()
         float top    = 0.5f + halfScaleY + bgOffsetY;
 
         glBegin(GL_QUADS);
-            glTexCoord2f(0, 1); glVertex2f(left, bottom);
-            glTexCoord2f(1, 1); glVertex2f(right, bottom);
-            glTexCoord2f(1, 0); glVertex2f(right, top);
-            glTexCoord2f(0, 0); glVertex2f(left, top);
+            glTexCoord2f(0, 1); glVertex3f(left, bottom, -1.0f);
+            glTexCoord2f(1, 1); glVertex3f(right, bottom, -1.0f);
+            glTexCoord2f(1, 0); glVertex3f(right, top, -1.0f);
+            glTexCoord2f(0, 0); glVertex3f(left, top, -1.0f);
         glEnd();
 
         glEnable(GL_DEPTH_TEST);
@@ -270,7 +248,7 @@ void _mainMenu::drawScene()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        // setup orthographic projection for 0..1 screen space
+        // ---- setup orthographic projection for 0..1 screen space ----
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -280,10 +258,10 @@ void _mainMenu::drawScene()
         glPushMatrix();
         glLoadIdentity();
 
-        // bind the logo texture
+        // ---- bind the logo texture ----
         helpMenuUI->bindTexture();
 
-        // draw quad
+        // ---- draw quad ----
         float logoWidth  = 0.3f;
         float logoHeight = 0.2f;
         float logoLeft   = 0.5f - logoWidth / 2.0f;
@@ -298,7 +276,7 @@ void _mainMenu::drawScene()
             glTexCoord2f(0, 0); glVertex2f(0, 1);
         glEnd();
 
-        // restore projection/modelview
+        // ---- restore projection/modelview ----
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
@@ -316,8 +294,8 @@ int _mainMenu::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
     case WM_KEYDOWN:
         myInput->wParam = wParam;
-        myInput->keyPressed(mySkyBox);
-        //myInput->keyPressed(myCam);
+        //myInput->keyPressed(mySkyBox);        ----OLD----
+        //myInput->keyPressed(myCam);           ----OLD----
         myInput->keys[wParam] = true;
         break;
 
@@ -327,32 +305,12 @@ int _mainMenu::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_LBUTTONDOWN:
-        //myInput->mouseEventDown(model, LOWORD(lParam), HIWORD(lParam));
-        clickCount = clickCount % 10;
-
-        b[clickCount].src.x = mdl3D->pos.x;
-        b[clickCount].src.y = mdl3D->pos.y;
-        b[clickCount].src.z = mdl3D->pos.z;
-
-        b[clickCount].des.x = msX;
-        b[clickCount].des.y = -msY;
-        b[clickCount].des.z = msZ;
-
-        b[clickCount].t = 0;
-        b[clickCount].actionTrigger = b[clickCount].SHOOT;
-        b[clickCount].isAlive = true;
-
-        clickCount++;
-
-        snds->playSound("sounds/untitled2.mp3");
         break;
 
     case WM_MOUSEMOVE:
-        myInput->mouseMove(myCam, LOWORD(lParam), HIWORD(lParam));
         break;
 
     case WM_MOUSEWHEEL:
-        myInput->mouseWheel(myModel, (double)GET_WHEEL_DELTA_WPARAM(wParam));
         break;
     }
 
@@ -361,7 +319,7 @@ int _mainMenu::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void _mainMenu::updateBackgroundOffset(float dt, HWND hWnd, int screenWidth, int screenHeight)
 {
-    // Step 1: increment delay timer
+    // ---- increment delay timer ----
     if (bgDelayTimer < bgDelayDuration)
     {
         bgDelayTimer += dt;
@@ -373,7 +331,7 @@ void _mainMenu::updateBackgroundOffset(float dt, HWND hWnd, int screenWidth, int
         bgMoveFactor = 1.0f;
     }
 
-    // Step 2: get mouse position
+    // ---- get mouse position ----
     POINT cursor;
     GetCursorPos(&cursor);
     ScreenToClient(hWnd, &cursor);
@@ -387,7 +345,7 @@ void _mainMenu::updateBackgroundOffset(float dt, HWND hWnd, int screenWidth, int
     bgTargetX = nx * maxOffsetX * 2.0f;
     bgTargetY = -ny * maxOffsetY * 2.0f;
 
-    // Step 3: slowly interpolate toward target, scaled by bgMoveFactor
+    // ---- slowly interpolate toward target, scaled by bgMoveFactor ----
     bgOffsetX -= (bgTargetX - bgOffsetX) * bgMoveSpeed * bgMoveFactor;
     bgOffsetY -= (bgTargetY - bgOffsetY) * bgMoveSpeed * bgMoveFactor;
 }

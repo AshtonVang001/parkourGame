@@ -46,6 +46,8 @@ class _inputs
         WPARAM wParam;
         LPARAM lParam;
 
+        float newFov = 60.0f;
+
     protected:
 
     private:

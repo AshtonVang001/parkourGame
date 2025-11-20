@@ -21,9 +21,9 @@ void _skyBox::skyBoxInit()
     pos.x = pos.y = 0;
     pos.z = -9.0;
 
-    boxSize.x = 100.0;
-    boxSize.z = 400.0;
-    boxSize.y = 100.0;
+    boxSize.x = 1000.0;
+    boxSize.z = 4000.0;
+    boxSize.y = 1000.0;
 }
 
 void _skyBox::drawSkyBox()
