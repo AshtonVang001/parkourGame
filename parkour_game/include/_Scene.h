@@ -75,6 +75,7 @@ public:
     GltfModel* pedestalBase;
     GltfModel* pedestal;
     GltfModel* platform1;
+    GltfModel* platform2;
 
     // ---- load model texture ----
     _textureLoader *testTexture = new _textureLoader();

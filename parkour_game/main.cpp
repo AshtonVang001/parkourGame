@@ -25,6 +25,9 @@ _mainMenu *myMenu = new _mainMenu();
 _sceneSwitcher* sceneSwitcher = new _sceneSwitcher();
 _timer myTimer;
 _sounds *menuSnds = new _sounds();
+_sounds *sceneSnds = new _sounds();
+
+int previousScene = -1;
 
 using namespace std;
 
@@ -414,6 +417,16 @@ int WINAPI WinMain(
 
                 static bool prevH = false;
                 bool currentH = keys['H'];
+
+                if (sceneSwitcher->currentScene != previousScene) {
+
+                    if (sceneSwitcher->currentScene == SCENE_GAME) {
+                        sceneSnds->eng->setSoundVolume(0.06f);
+                        sceneSnds->playMusic("sounds/gameMusic.wav");   // play once on entering game
+                    }
+
+                    previousScene = sceneSwitcher->currentScene; // update tracker
+                }
 
 
                 switch (sceneSwitcher->currentScene)

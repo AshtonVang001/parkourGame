@@ -130,28 +130,37 @@ void _Scene::initGL()
     ground = loader.loadModel("models/levelFloor.glb");
     pedestalBase = loader.loadModel("models/levelPedestalBase.glb");
     pedestal = loader.loadModel("models/levelPedestal.glb");
+    platform2 = loader.loadModel("models/platform.glb");
 
     // ---- Load Model Texture ----
     GLuint texID = testTexture->loadTexture("images/test_texture.jpg");
     GLuint texID2 = testTexture->loadTexture("images/pedestal.jpg");
     GLuint texID3 = testTexture->loadTexture("images/bone2.jpg");
+    GLuint texID4 = testTexture->loadTexture("images/bricks.jpg");
 
 
     // ---- Extra platform (reuse ground model as simple platform instance)
     platform1 = loader.loadModel("models/ground.glb");
 
-    if (platform1) {
         // Use ground/test texture instead of the red texture so platform matches scene
         platform1->textureID = texID;
         platform1->buildTriangleList();
         platform1->uploadToGPU();
-    }
+
+        ground->buildTriangleList();
+        ground->uploadToGPU();
+
+        platform2->buildTriangleList();
+        platform2->uploadToGPU();
+
+
     // ---- Bind Model Texture ----
     myGltfModel->textureID = texID;     //monke
     myGltfModel2->textureID = texID3;   //skull
-    ground->textureID = texID2;
+    ground->textureID = texID4;
     pedestalBase->textureID = texID2;
     pedestal->textureID = texID2;
+    platform2->textureID = texID4;
 
     if (!myGltfModel) {
         std::cerr << "GLTF: Failed to load model\n";
@@ -264,6 +273,8 @@ void _Scene::updateScene()
 
     // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
     if (platform1) testTransformed(platform1, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
+    if (ground) testTransformed( ground, levelScale, levelScale, levelScale, 0.0f, -4.0f, 0.0f);
+    if (platform2) testTransformed( platform2, levelScale, levelScale, levelScale, 0.0f, -4.0f, -50.0f);
 
     if (anyHit) {
         // Add a small tolerance so the camera doesn't sink slightly below the platform
@@ -328,7 +339,7 @@ void _Scene::drawScene()
             glScalef(1.0f, 0.3f, 0.5f);
             glColor3f(1,1,1);
             if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
-            platform1->draw();
+            //platform1->draw();
             if (platform1->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
         glPopMatrix();
     }
@@ -387,6 +398,18 @@ void _Scene::drawScene()
         glScalef(levelScale, levelScale, levelScale);
         glColor3f(1,1,1);
         pedestal->draw();
+    glPopMatrix();
+
+
+    static float autoRot = 0.0f;
+    autoRot += 20.0f * deltaTime;
+
+    glPushMatrix();
+        glTranslatef(0, -4, -50);
+        glRotatef(180* yOffset, 0, 1, 0);
+        glScalef(levelScale, levelScale, levelScale);
+        glColor3f(1,1,1);
+        platform2->draw();
     glPopMatrix();
 }
 
