@@ -48,6 +48,7 @@
 			<Add directory="../common/lib" />
 		</Linker>
 		<Unit filename="include/Anorms.h" />
+		<Unit filename="include/GLTFLoader.h" />
 		<Unit filename="include/_3DModelLoader.h" />
 		<Unit filename="include/_Scene.h" />
 		<Unit filename="include/_bullets.h" />
@@ -66,10 +67,12 @@
 		<Unit filename="include/_sprite.h" />
 		<Unit filename="include/_textureLoader.h" />
 		<Unit filename="include/_timer.h" />
+		<Unit filename="include/_videoLoader.h" />
 		<Unit filename="include/cgltf.h" />
 		<Unit filename="include/gltfModel.h" />
-		<Unit filename="include/t.h" />
+		<Unit filename="include/shader.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="src/GLTFLoader.cpp" />
 		<Unit filename="src/_3DModelLoader.cpp" />
 		<Unit filename="src/_Scene.cpp" />
 		<Unit filename="src/_bullets.cpp" />
@@ -87,9 +90,10 @@
 		<Unit filename="src/_sprite.cpp" />
 		<Unit filename="src/_textureLoader.cpp" />
 		<Unit filename="src/_timer.cpp" />
+		<Unit filename="src/_videoLoader.cpp" />
 		<Unit filename="src/cgltf_impl.cpp" />
 		<Unit filename="src/gltfModel.cpp" />
-		<Unit filename="src/t.cpp" />
+		<Unit filename="src/shader.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

@@ -17,6 +17,9 @@
 #include <_sounds.h>
 #include <_gltfLoader.h>
 #include <_sceneSwitcher.h>
+#include <GLTFLoader.h>
+#include <shader.h>
+#include <_videoLoader.h>
 
 class _Scene
 {
@@ -64,6 +67,17 @@ public:
     _collisionCheck *myCol;
     _sounds *snds;
     _sceneSwitcher *sceneSwitcher = new _sceneSwitcher();
+
+    VideoLoader *testVideo = new VideoLoader();
+
+
+    float jointAngle = 0;
+    GLTFModel myNewModel;
+    Shader* gltfShader = nullptr;
+
+    int windowWidth = GetSystemMetrics(SM_CXSCREEN);
+    int windowHeight = GetSystemMetrics(SM_CYSCREEN);
+
 
     _bullets b[10];
 

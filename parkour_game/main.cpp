@@ -19,6 +19,7 @@
 #include <_Scene.h>
 #include <_mainMenu.h>
 #include <_sounds.h>
+#include <_camera.h>
 
 _Scene *myScene = new _Scene();     //create scene class instance
 _mainMenu *myMenu = new _mainMenu();
@@ -26,6 +27,7 @@ _sceneSwitcher* sceneSwitcher = new _sceneSwitcher();
 _timer myTimer;
 _sounds *menuSnds = new _sounds();
 _sounds *sceneSnds = new _sounds();
+_camera *myCamera = new _camera();
 
 int previousScene = -1;
 
@@ -458,6 +460,7 @@ int WINAPI WinMain(
 
                         if (keys[VK_SHIFT]) {
                             myScene->fov = 65.0f;
+                            myCamera->fov = 65.0f;
                         }
                         else {
                             myScene->fov = 60.0f;
@@ -468,6 +471,7 @@ int WINAPI WinMain(
                     case SCENE_MENU:
                         myMenu->updateScene();                   // update with delta time
                         myMenu->drawScene();                     // draw after update
+                        glUseProgram(0);
 
                         if (keys['N']) {
                             menuSnds->playSound("sounds/button.wav");

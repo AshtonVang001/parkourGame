@@ -190,3 +190,16 @@ float _camera::lerp(float a, float b, float t)
 {
     return a + (b - a) * t;
 }
+
+glm::mat4 _camera::getViewMatrix() {
+    return glm::lookAt(
+        glm::vec3(eye.x, eye.y, eye.z),
+        glm::vec3(des.x, des.y, des.z),
+        glm::vec3(up.x,  up.y,  up.z)
+    );
+}
+
+
+glm::mat4 _camera::getProjectionMatrix(float aspect) {
+    return glm::perspective(glm::radians(fov), aspect, 0.1f, 1000.0f);
+}

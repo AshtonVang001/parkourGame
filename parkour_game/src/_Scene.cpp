@@ -139,6 +139,14 @@ void _Scene::initGL()
     GLuint texID4 = testTexture->loadTexture("images/bricks.jpg");
 
 
+
+    // ---- NEW MODEL LOADER ----
+    myNewModel.load("models/catSkull3.glb");
+    myNewModel.setActiveAnimation(0);
+    gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
+
+
+
     // ---- Extra platform (reuse ground model as simple platform instance)
     platform1 = loader.loadModel("models/ground.glb");
 
@@ -179,6 +187,12 @@ void _Scene::initGL()
                 << ", indices: " << myGltfModel2->indices.size()
                 << ", textureID: " << myGltfModel2->textureID << "\n";
     }
+
+
+    // ---- Video Loader ----
+    testVideo->load("videos/testVideo", "testVideo", 1, 25, 24.0f, VideoMode::PRELOAD);
+
+
 }
 
 
@@ -209,7 +223,6 @@ void _Scene::updateScene()
 
     animTime += myTime->deltaTime;
 
-    animTime += myTime->deltaTime;
 
     // Raycast down from camera to detect ground height
     vec3 rayStart = myCam->eye;
@@ -411,6 +424,165 @@ void _Scene::drawScene()
         glColor3f(1,1,1);
         platform2->draw();
     glPopMatrix();
+
+
+
+
+    // ---- Shader and new Model Loader stuff ----
+
+    GLboolean lightingEnabled = glIsEnabled(GL_LIGHTING);
+    GLboolean depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean blendEnabled = glIsEnabled(GL_BLEND);
+    GLboolean tex2DEnabled = glIsEnabled(GL_TEXTURE_2D);
+    GLboolean cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
+    GLint currentProgram; glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
+    GLint boundVAO = 0; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &boundVAO);
+    GLint boundTex = 0; glGetIntegerv(GL_TEXTURE_BINDING_2D, &boundTex);
+    GLboolean depthMask; glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+    GLint depthFunc; glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+    GLint vp[4]; glGetIntegerv(GL_VIEWPORT, vp);
+
+
+    myNewModel.update(myTime->deltaTime);
+
+    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,0,-8));
+    glm::mat4 viewMatrix = myCam->getViewMatrix();
+    glm::mat4 projMatrix = myCam->getProjectionMatrix((float)width / height);
+
+
+    gltfShader->use();
+    glUniformMatrix4fv(gltfShader->getUniform("uModel"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(gltfShader->getUniform("uView"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+    glUniformMatrix4fv(gltfShader->getUniform("uProj"), 1, GL_FALSE, glm::value_ptr(projMatrix));
+
+    jointAngle += deltaTime * glm::radians(45.0f); // 45 degrees per second
+
+    myNewModel.draw();
+
+
+    glUseProgram(currentProgram);
+    if (lightingEnabled) glEnable(GL_LIGHTING); else glDisable(GL_LIGHTING);
+    if (depthTestEnabled) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if (blendEnabled) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+    if (tex2DEnabled) glEnable(GL_TEXTURE_2D); else glDisable(GL_TEXTURE_2D);
+    if (cullFaceEnabled) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+    glBindVertexArray(boundVAO);
+    glBindTexture(GL_TEXTURE_2D, boundTex);
+    glDepthMask(depthMask);
+    glDepthFunc(depthFunc);
+    glViewport(vp[0], vp[1], vp[2], vp[3]);
+
+
+
+
+
+
+
+
+    // ---- Video Loader ----
+    testVideo->update(myTime->deltaTime);
+
+    glPushMatrix();
+    /*
+    // Move quad where you want it in the 3D world:
+    glTranslatef(0.0f, 0.0f, 0.0f);
+
+    glDisable(GL_LIGHTING);   // optional
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindTexture(GL_TEXTURE_2D, testVideo->getCurrentTexture());
+    glColor3f(1.f, 1.f, 1.f); // important: white so your texture isn’t tinted
+
+    float halfW = 5.0f;
+    float halfH = 5.0f;
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(-halfW, -halfH, 0.0f); // bottom-left
+        glTexCoord2f(1.0f, 1.0f); glVertex3f( halfW, -halfH, 0.0f); // bottom-right
+        glTexCoord2f(1.0f, 0.0f); glVertex3f( halfW,  halfH, 0.0f); // top-right
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(-halfW,  halfH, 0.0f); // top-left
+    glEnd();
+    */
+
+
+
+    // Position of your video quad in the world
+    float vx = 0.0f;
+    float vy = 2.0f;
+    float vz = -5.0f;
+
+    // Get camera vectors
+    float camX = myCam->eye.x;
+    float camY = myCam->eye.y;
+    float camZ = myCam->eye.z;
+
+    float dx = camX - vx;
+    float dy = camY - vy;
+    float dz = camZ - vz;
+
+    // Normalize forward vector
+    float len = sqrt(dx*dx + dy*dy + dz*dz);
+    dx /= len;
+    dy /= len;
+    dz /= len;
+
+    // Up vector for billboard
+    float upx = 0;
+    float upy = 1;
+    float upz = 0;
+
+    // Right vector = forward × up
+    float rx = upy * dz - upz * dy;
+    float ry = upz * dx - upx * dz;
+    float rz = upx * dy - upy * dx;
+
+    // Recompute up = right × forward (orthogonal)
+    float ux = ry * dz - rz * dy;
+    float uy = rz * dx - rx * dz;
+    float uz = rx * dy - ry * dx;
+
+    // Size of video
+    float w = 15.0f;
+    float h = 15.0f;
+
+    // Draw video texture
+    glBindTexture(GL_TEXTURE_2D, testVideo->getCurrentTexture());
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBegin(GL_QUADS);
+
+    // Bottom-left
+    glTexCoord2f(0, 0);
+    glVertex3f(vx - rx*w*0.5f - ux*h*0.5f,
+               vy - ry*w*0.5f - uy*h*0.5f,
+               vz - rz*w*0.5f - uz*h*0.5f);
+
+    // Bottom-right
+    glTexCoord2f(1, 0);
+    glVertex3f(vx + rx*w*0.5f - ux*h*0.5f,
+               vy + ry*w*0.5f - uy*h*0.5f,
+               vz + rz*w*0.5f - uz*h*0.5f);
+
+    // Top-right
+    glTexCoord2f(1, 1);
+    glVertex3f(vx + rx*w*0.5f + ux*h*0.5f,
+               vy + ry*w*0.5f + uy*h*0.5f,
+               vz + rz*w*0.5f + uz*h*0.5f);
+
+    // Top-left
+    glTexCoord2f(0, 1);
+    glVertex3f(vx - rx*w*0.5f + ux*h*0.5f,
+               vy - ry*w*0.5f + uy*h*0.5f,
+               vz - rz*w*0.5f + uz*h*0.5f);
+
+    glEnd();
+
+
+    glPopMatrix();
+
+
 }
 
 int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

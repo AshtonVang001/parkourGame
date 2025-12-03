@@ -39,6 +39,13 @@ class _camera
 
 
 
+        glm::mat4 getViewMatrix();
+        glm::mat4 getProjectionMatrix(float aspect);
+
+        float fov = 60.0f; // default is 45.0
+
+
+
         // In _camera.h
         void jump();
         void updateVertical(float);
