@@ -51,6 +51,8 @@ class _camera
         void updateVertical(float);
         float lerp(float, float, float);
 
+        void update(float);
+
         float verticalVel;   // vertical velocity for jump
         bool isJumping;      // true while in the air
         float gravity;       // e.g., -9.8 units/sec^2

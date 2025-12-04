@@ -92,6 +92,10 @@ void _camera::camMoveFdBd(float dir)
     eye.z += forward.z * dir;
     des.x += forward.x * dir;
     des.z += forward.z * dir;
+
+    // Update standing pose if not jumping
+    if (!isJumping) startEye = eye;
+    if (!isJumping) startDes = des;
 }
 
 void _camera::camMoveLtRt(float dir)
@@ -117,6 +121,10 @@ void _camera::camMoveLtRt(float dir)
     eye.z += right.z * dir;
     des.x += right.x * dir;
     des.z += right.z * dir;
+
+    // Update standing pose if not jumping
+    if (!isJumping) startEye = eye;
+    if (!isJumping) startDes = des;
 }
 
 
@@ -202,4 +210,39 @@ glm::mat4 _camera::getViewMatrix() {
 
 glm::mat4 _camera::getProjectionMatrix(float aspect) {
     return glm::perspective(glm::radians(fov), aspect, 0.1f, 1000.0f);
+}
+
+void _camera::update(float dt)
+{
+    //
+    // 1. Apply horizontal movement first (already done in input)
+    //
+
+    //
+    // 2. Apply vertical physics
+    //
+
+    // predict Y before collision
+    float predictedY = eye.y;
+
+    if (isJumping) {
+        verticalVel += gravity * dt;
+        predictedY += verticalVel * dt;
+    }
+
+    //
+    // 3. Clamp to ground using new collision groundY
+    //
+
+    if (predictedY <= groundY) {
+        predictedY = groundY;
+        verticalVel = 0;
+        isJumping = false;
+    }
+
+    //
+    // 4. Apply the corrected Y
+    //
+    eye.y = predictedY;
+    des = eye + lookDir;
 }

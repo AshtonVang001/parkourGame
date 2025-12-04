@@ -36,6 +36,6 @@ void _sounds::stopSounds()
 void _sounds::initSounds()
 {
     if (!eng) {
-        cout << "ERROR: The sound could not load" << endl;
+        //cout << "ERROR: The sound could not load" << endl;
     }
 }

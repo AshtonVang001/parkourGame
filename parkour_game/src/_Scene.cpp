@@ -171,21 +171,21 @@ void _Scene::initGL()
     platform2->textureID = texID4;
 
     if (!myGltfModel) {
-        std::cerr << "GLTF: Failed to load model\n";
+        //std::cerr << "GLTF: Failed to load model\n";
     }
     else if (myGltfModel->vertices.empty() || myGltfModel->indices.empty()) {
-        std::cerr << "GLTF: File parsed but contains no mesh\n";
+        //std::cerr << "GLTF: File parsed but contains no mesh\n";
     }
     else {
-        std::cout << "GLTF: Uploading to GPU...\n";
+        //std::cout << "GLTF: Uploading to GPU...\n";
         myGltfModel->uploadToGPU();
-        std::cout << "GLTF: Ready\n";
+        //std::cout << "GLTF: Ready\n";
     }
 
     if (myGltfModel2) {
-        std::cout << "GLTF2 verts: " << myGltfModel2->vertices.size()
-                << ", indices: " << myGltfModel2->indices.size()
-                << ", textureID: " << myGltfModel2->textureID << "\n";
+        //std::cout << "GLTF2 verts: " << myGltfModel2->vertices.size()
+                //<< ", indices: " << myGltfModel2->indices.size()
+                //<< ", textureID: " << myGltfModel2->textureID << "\n";
     }
 
 
@@ -289,17 +289,29 @@ void _Scene::updateScene()
     if (ground) testTransformed( ground, levelScale, levelScale, levelScale, 0.0f, -4.0f, 0.0f);
     if (platform2) testTransformed( platform2, levelScale, levelScale, levelScale, 0.0f, -4.0f, -50.0f);
 
-    if (anyHit) {
-        // Add a small tolerance so the camera doesn't sink slightly below the platform
-        const float collisionEpsilon = 0.1f; // adjust as needed
-        myCam->groundY = bestHit.y + collisionEpsilon;
-    }
-    else
-        myCam->groundY = -9999;
+    if (myInput && myCam) {
+    // 1. Horizontal movement FIRST (WASD)
+    myInput->keyPressed(myCam, smoothDT);
+        }
 
-        if (myInput && myCam) {
-        myInput->keyPressed(myCam, smoothDT);
-        //myCam->update(smoothDT, myCol, ground);
+        // 2. Collision / raycast: determine groundY for THIS new position
+        if (anyHit) {
+            const float collisionEpsilon = 5.0f;
+            myCam->groundY = bestHit.y + collisionEpsilon;
+        }
+        else {
+            myCam->groundY = -9999; // camera is in the air / falling
+        }
+
+        // 3. Apply vertical physics AFTER collision has set groundY
+        myCam->update(smoothDT);
+        if (myCam->eye.y < -100.0f) {
+        // Reset camera to start position
+        myCam->eye = myCam->startEye;
+        myCam->des = myCam->startDes;
+        myCam->verticalVel = 0.0f;
+        myCam->isJumping = false;
+        myCam->isLanding = false;
     }
 }
 

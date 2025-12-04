@@ -73,11 +73,11 @@ int _3DModelLoader::ReadMD2Model(const char* filename, struct md2_model_t* mdl)
       fread (mdl->frames[i].name, sizeof (char), 16, fp);
       fread (mdl->frames[i].verts, sizeof (struct md2_vertex_t),mdl->header.num_vertices, fp);
 
-      cout<<mdl->frames[i].name<<endl;
+      //cout<<mdl->frames[i].name<<endl;
     }
 
     for(int i =0; i<mdl->header.num_skins; i++){
-        cout<<mdl->skins[i].name<<endl;
+        //cout<<mdl->skins[i].name<<endl;
         myTex->loadTexture("models/Tekk/blade.jpg");
         mdl->tex_id = myTex->textID;
     }
