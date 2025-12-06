@@ -33,6 +33,7 @@ public:
     void updateScene();
     int winMsg(HWND, UINT, WPARAM, LPARAM);
     void mouseMapping(int, int);
+    void resetScene();
 
     double msX, msY, msZ;
     int width, height;
@@ -69,14 +70,23 @@ public:
     _sceneSwitcher *sceneSwitcher = new _sceneSwitcher();
 
     VideoLoader *testVideo = new VideoLoader();
+    VideoLoader *cutScene1 = new VideoLoader();
+    VideoLoader *introCutscene = new VideoLoader();
 
 
     float jointAngle = 0;
     GLTFModel myNewModel;
+    GLTFModel orb;
+    GLTFModel levelPlatforms;
+    GLTFModel spinPlatform;
+    GLTFModel movePlatform;
+
     Shader* gltfShader = nullptr;
 
     int windowWidth = GetSystemMetrics(SM_CXSCREEN);
     int windowHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    bool levelComplete = false;
 
 
     _bullets b[10];

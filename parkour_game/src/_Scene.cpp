@@ -141,8 +141,21 @@ void _Scene::initGL()
 
 
     // ---- NEW MODEL LOADER ----
-    myNewModel.load("models/catSkull3.glb");
+    myNewModel.load("models/endPlatform.glb");
     myNewModel.setActiveAnimation(0);
+
+    orb.load("models/Orb.glb");
+    orb.setActiveAnimation(0);
+
+    levelPlatforms.load("models/levelplatforms.glb");
+    levelPlatforms.setActiveAnimation(0);
+
+    spinPlatform.load("models/spinPlatform.glb");
+    spinPlatform.setActiveAnimation(0);
+
+    movePlatform.load("models/movePlatform.glb");
+    movePlatform.setActiveAnimation(0);
+
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
 
 
@@ -190,29 +203,14 @@ void _Scene::initGL()
 
 
     // ---- Video Loader ----
-    testVideo->load("videos/testVideo", "testVideo", 1, 25, 24.0f, VideoMode::PRELOAD);
+    cutScene1->load("videos/cutscene1", "cutscene", 1, 85, 24.0f, VideoMode::STREAM);
+    cutScene1->playOnce();
+
+    introCutscene->load("videos/introCutscene", "intro", 1, 100, 24.0f, VideoMode::PRELOAD);
+    //introCutscene->playOnce();
 
 
 }
-
-
-/*
-void _Scene::updateScene()
-{
-    myTime->updateDeltaTime();
-
-    static float smoothDT = 0.16f;
-    smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
-
-    myCam->rotateXY();
-
-    animTime += myTime->deltaTime;
-
-    if (myInput && myCam) {
-        myInput->keyPressed(myCam, smoothDT);
-    }
-}
-*/
 
 
 void _Scene::updateScene()
@@ -384,8 +382,8 @@ void _Scene::drawScene()
 
     //skulls
     glPushMatrix();
-        glTranslatef(4.5, 7 + yOffset, -16);
-        glScalef(1.6, 1.6, 1.6);
+        glTranslatef(7.5, 7 + yOffset, -16);
+        glScalef(2.5, 2.5, 2.5);
         glColor3f(1,1,1);
         glRotatef(-20, 0, 1, 0);
         glRotatef(30, 1, 0, 0);
@@ -393,48 +391,12 @@ void _Scene::drawScene()
     glPopMatrix();
 
     glPushMatrix();
-        glTranslatef(-4.5, 7 - yOffset, -16);
-        glScalef(1.6, 1.6, 1.6);
+        glTranslatef(-7.5, 7 - yOffset, -16);
+        glScalef(2.5, 2.5, 2.5);
         glColor3f(1,1,1);
         glRotatef(20, 0, 1, 0);
         glRotatef(30, 1, 0, 0);
         myGltfModel2->draw();
-    glPopMatrix();
-
-
-    //level
-    glPushMatrix();
-        glTranslatef(0, -4, 0);
-        glScalef(levelScale, levelScale, levelScale);
-        glColor3f(1,1,1);
-        glRotatef(180, 0, 1, 0);
-        ground->draw();
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslatef(0, -4, 0);
-        glScalef(levelScale, levelScale, levelScale);
-        glColor3f(1,1,1);
-        pedestalBase->draw();
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslatef(0, -4, 0);
-        glScalef(levelScale, levelScale, levelScale);
-        glColor3f(1,1,1);
-        pedestal->draw();
-    glPopMatrix();
-
-
-    static float autoRot = 0.0f;
-    autoRot += 20.0f * deltaTime;
-
-    glPushMatrix();
-        glTranslatef(0, -4, -50);
-        glRotatef(180* yOffset, 0, 1, 0);
-        glScalef(levelScale, levelScale, levelScale);
-        glColor3f(1,1,1);
-        platform2->draw();
     glPopMatrix();
 
 
@@ -455,9 +417,12 @@ void _Scene::drawScene()
     GLint vp[4]; glGetIntegerv(GL_VIEWPORT, vp);
 
 
-    myNewModel.update(myTime->deltaTime);
+    spinPlatform.update(myTime->deltaTime);
+    movePlatform.update(myTime->deltaTime);
+    orb.update(myTime->deltaTime);
 
-    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,0,-8));
+    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,-9,-440));
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(7));
     glm::mat4 viewMatrix = myCam->getViewMatrix();
     glm::mat4 projMatrix = myCam->getProjectionMatrix((float)width / height);
 
@@ -469,7 +434,21 @@ void _Scene::drawScene()
 
     jointAngle += deltaTime * glm::radians(45.0f); // 45 degrees per second
 
-    myNewModel.draw();
+    if (!levelComplete) {
+        myNewModel.draw();
+        levelPlatforms.draw();
+        spinPlatform.draw();
+        movePlatform.draw();
+    }
+
+    glm::mat4 orbModelMatrix = glm::mat4(1.0f);
+
+    orbModelMatrix = glm::translate(orbModelMatrix, glm::vec3(0, -12, -440));
+    orbModelMatrix = glm::scale(orbModelMatrix, glm::vec3(7.0f));
+    glUniformMatrix4fv(gltfShader->getUniform("uModel"), 1, GL_FALSE, glm::value_ptr(orbModelMatrix));
+
+    if (!levelComplete)
+        orb.draw();
 
 
     glUseProgram(currentProgram);
@@ -486,113 +465,109 @@ void _Scene::drawScene()
 
 
 
-
-
-
-
-
     // ---- Video Loader ----
-    testVideo->update(myTime->deltaTime);
+    if (fabs(myCam->eye.z + 440.0f) < 2 && fabs(myCam->eye.x + 0) < 2) {
+        levelComplete = true;
+        //cout << "Level Complete!" << endl;
+    }
 
-    glPushMatrix();
+
+
+
+
     /*
-    // Move quad where you want it in the 3D world:
-    glTranslatef(0.0f, 0.0f, 0.0f);
+    if (!introCutscene->finished)
+    {
+        introCutscene->update(myTime->deltaTime);
 
-    glDisable(GL_LIGHTING);   // optional
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindTexture(GL_TEXTURE_2D, testVideo->getCurrentTexture());
-    glColor3f(1.f, 1.f, 1.f); // important: white so your texture isn’t tinted
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
 
-    float halfW = 5.0f;
-    float halfH = 5.0f;
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
 
-    glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-halfW, -halfH, 0.0f); // bottom-left
-        glTexCoord2f(1.0f, 1.0f); glVertex3f( halfW, -halfH, 0.0f); // bottom-right
-        glTexCoord2f(1.0f, 0.0f); glVertex3f( halfW,  halfH, 0.0f); // top-right
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-halfW,  halfH, 0.0f); // top-left
-    glEnd();
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, introCutscene->getCurrentTexture());
+        glColor4f(1,1,1,1);
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(0, 0);
+            glTexCoord2f(1, 1); glVertex2f(windowWidth, 0);
+            glTexCoord2f(1, 0); glVertex2f(windowWidth, windowHeight);
+            glTexCoord2f(0, 0); glVertex2f(0, windowHeight);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
+        glColor4f(1,1,1,1); // reset color
+    }
     */
 
 
 
-    // Position of your video quad in the world
-    float vx = 0.0f;
-    float vy = 2.0f;
-    float vz = -5.0f;
-
-    // Get camera vectors
-    float camX = myCam->eye.x;
-    float camY = myCam->eye.y;
-    float camZ = myCam->eye.z;
-
-    float dx = camX - vx;
-    float dy = camY - vy;
-    float dz = camZ - vz;
-
-    // Normalize forward vector
-    float len = sqrt(dx*dx + dy*dy + dz*dz);
-    dx /= len;
-    dy /= len;
-    dz /= len;
-
-    // Up vector for billboard
-    float upx = 0;
-    float upy = 1;
-    float upz = 0;
-
-    // Right vector = forward × up
-    float rx = upy * dz - upz * dy;
-    float ry = upz * dx - upx * dz;
-    float rz = upx * dy - upy * dx;
-
-    // Recompute up = right × forward (orthogonal)
-    float ux = ry * dz - rz * dy;
-    float uy = rz * dx - rx * dz;
-    float uz = rx * dy - ry * dx;
-
-    // Size of video
-    float w = 15.0f;
-    float h = 15.0f;
-
-    // Draw video texture
-    glBindTexture(GL_TEXTURE_2D, testVideo->getCurrentTexture());
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glBegin(GL_QUADS);
-
-    // Bottom-left
-    glTexCoord2f(0, 0);
-    glVertex3f(vx - rx*w*0.5f - ux*h*0.5f,
-               vy - ry*w*0.5f - uy*h*0.5f,
-               vz - rz*w*0.5f - uz*h*0.5f);
-
-    // Bottom-right
-    glTexCoord2f(1, 0);
-    glVertex3f(vx + rx*w*0.5f - ux*h*0.5f,
-               vy + ry*w*0.5f - uy*h*0.5f,
-               vz + rz*w*0.5f - uz*h*0.5f);
-
-    // Top-right
-    glTexCoord2f(1, 1);
-    glVertex3f(vx + rx*w*0.5f + ux*h*0.5f,
-               vy + ry*w*0.5f + uy*h*0.5f,
-               vz + rz*w*0.5f + uz*h*0.5f);
-
-    // Top-left
-    glTexCoord2f(0, 1);
-    glVertex3f(vx - rx*w*0.5f + ux*h*0.5f,
-               vy - ry*w*0.5f + uy*h*0.5f,
-               vz - rz*w*0.5f + uz*h*0.5f);
-
-    glEnd();
 
 
-    glPopMatrix();
+
+    if (levelComplete)
+    {
+        cutScene1->update(myTime->deltaTime);
+        // Save your current matrices
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+
+        // Switch to orthographic screen coordinates
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        // ENABLE textures now
+        glEnable(GL_TEXTURE_2D);
+
+        // Bind your video frame texture
+        glBindTexture(GL_TEXTURE_2D, cutScene1->getCurrentTexture());
+
+        // Make sure color doesn't tint it
+        glColor4f(1, 1, 1, 1);
+
+        // Draw textured fullscreen quad (FLIPPED V so video is upright)
+        glBegin(GL_QUADS);
+
+            glTexCoord2f(0, 1);   // was (0,0)
+            glVertex2f(0, 0);
+
+            glTexCoord2f(1, 1);   // was (1,0)
+            glVertex2f(windowWidth, 0);
+
+            glTexCoord2f(1, 0);   // was (1,1)
+            glVertex2f(windowWidth, windowHeight);
+
+            glTexCoord2f(0, 0);   // was (0,1)
+            glVertex2f(0, windowHeight);
+
+        glEnd();
+
+        // Restore previous matrices
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
+        // Reset state
+        glColor4f(1,1,1,1);
+    }
 
 
 }
@@ -605,7 +580,8 @@ int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         myInput->wParam = wParam;
         //myInput->keyPressed(mySkyBox);        ----OLD----
         //myInput->keyPressed(myCam);           ----OLD----
-        myInput->keys[wParam] = true;
+        //if (!levelComplete) ---- USE LATER ----
+            myInput->keys[wParam] = true;
         break;
 
     case WM_KEYUP:
@@ -635,7 +611,8 @@ int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_MOUSEMOVE:
-        myInput->mouseMove(myCam, LOWORD(lParam), HIWORD(lParam));
+        //if (!levelComplete) ---- USE LATER ----
+            myInput->mouseMove(myCam, LOWORD(lParam), HIWORD(lParam));
         break;
 
     case WM_MOUSEWHEEL:
