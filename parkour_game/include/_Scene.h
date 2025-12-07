@@ -27,43 +27,46 @@ public:
     _Scene();
     virtual ~_Scene();
 
+    // ---- Functions ----
     void initGL();
     void reSizeScene(int width, int height);
     void drawScene();
     void updateScene();
-    int winMsg(HWND, UINT, WPARAM, LPARAM);
     void mouseMapping(int, int);
     void resetScene();
+    int winMsg(HWND, UINT, WPARAM, LPARAM);
 
-    double msX, msY, msZ;
+
+    // ---- Variables ----
+    // int
     int width, height;
     int clickCount;
+    int windowWidth = GetSystemMetrics(SM_CXSCREEN);
+    int windowHeight = GetSystemMetrics(SM_CYSCREEN);
 
+    // double
+    double msX, msY, msZ;
+
+    // float
     float animTime = 0.0f;
-
     float fov = 60.0f; // default is 45.0
-
-
     float time; // time in seconds
     float amplitude = 0.5f; // how much it moves up and down
     float speed = 2;     // how fast it oscillates
     float yOffset;
-
     float levelScale = 3;
+    float jointAngle = 0;
+
+    // bool
+    bool levelComplete = false;
 
 
-
+    // ---- Objects ----
     _timer *myTime;
-
     _light *myLight;
-    _model *myModel;
     _inputs *myInput;
     _textureLoader *myTexture;
-    _parallax *myPrlx;
     _skyBox *mySkyBox;
-    _sprite *mySprite;
-    _3DModelLoader *mdl3D;
-    _3DModelLoader *mdl3DW;
     _camera *myCam;
     _collisionCheck *myCol;
     _sounds *snds;
@@ -73,8 +76,6 @@ public:
     VideoLoader *cutScene1 = new VideoLoader();
     VideoLoader *introCutscene = new VideoLoader();
 
-
-    float jointAngle = 0;
     GLTFModel myNewModel;
     GLTFModel orb;
     GLTFModel levelPlatforms;
@@ -83,28 +84,14 @@ public:
 
     Shader* gltfShader = nullptr;
 
-    int windowWidth = GetSystemMetrics(SM_CXSCREEN);
-    int windowHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    bool levelComplete = false;
-
-
-    _bullets b[10];
-
-    // ---- load models ----
+    // ---- load models (OLD) ----
     _gltfLoader loader;
-    GltfModel* myGltfModel;
     GltfModel* myGltfModel2;
-    GltfModel* ground;
-    GltfModel* pedestalBase;
-    GltfModel* pedestal;
-    GltfModel* platform1;
-    GltfModel* platform2;
+
 
     // ---- load model texture ----
     _textureLoader *testTexture = new _textureLoader();
-    _textureLoader *testTexture2 = new _textureLoader();
-    _textureLoader *groundTexture = new _textureLoader();
 
 
 protected:

@@ -10,20 +10,13 @@ _Scene::_Scene()
     myTime = new _timer();
     clickCount = 0;
 
-    // Set all pointers null until initGL()
     myLight = nullptr;
-    myModel = nullptr;
     myInput = nullptr;
     myTexture = nullptr;
-    myPrlx = nullptr;
     mySkyBox = nullptr;
-    mySprite = nullptr;
-    mdl3D = nullptr;
-    mdl3DW = nullptr;
     myCam = nullptr;
     myCol = nullptr;
     snds = nullptr;
-
     myGltfModel = nullptr;
     platform1 = nullptr;
 }
@@ -31,16 +24,10 @@ _Scene::_Scene()
 _Scene::~_Scene()
 {
     delete myTime;
-
     delete myLight;
-    delete myModel;
     delete myInput;
     delete myTexture;
-    delete myPrlx;
     delete mySkyBox;
-    delete mySprite;
-    delete mdl3D;
-    delete mdl3DW;
     delete myCam;
     delete myCol;
     delete snds;
@@ -78,28 +65,22 @@ void _Scene::initGL()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
     // ---- Create subsystems ----
     myLight  = new _light();
-    myModel  = new _model();
     myInput  = new _inputs();
     myTexture = new _textureLoader();
-    myPrlx   = new _parallax();
     mySkyBox = new _skyBox();
-    mySprite = new _sprite();
-    mdl3D    = new _3DModelLoader();
-    mdl3DW   = new _3DModelLoader();
     myCam    = new _camera();
     myCol    = new _collisionCheck();
     snds     = new _sounds();
 
     myTime->startTime = clock();
 
+
     // ---- Light ----
     myLight->setLight(GL_LIGHT0);
 
-    // ---- Load Textures ----
-    myTexture->loadTexture("images/tex4.jpg");
-    myPrlx->parallaxInit("images/prlx.jpg");
 
     // ---- Skybox ----
     mySkyBox->skyBoxInit();
@@ -110,34 +91,22 @@ void _Scene::initGL()
     mySkyBox->tex[4] = mySkyBox->textures->loadTexture("images/right.png");
     mySkyBox->tex[5] = mySkyBox->textures->loadTexture("images/left.png");
 
-    // ---- Sprite ----
-    mySprite->spriteInit("images/eg-1.png", 6, 4);
-
-    // ---- MD2 Models ----
-    mdl3D->initModel("models/Tekk/tris.md2");
-    mdl3DW->initModel("models/Tekk/weapon.md2");
 
     // ---- Camera ----
     myCam->camInit();
+
 
     // ---- Sounds ----
     snds->initSounds();
     snds->playSound("sounds/untitled.mp3");
 
+
     // ---- Load GLTF Model ----
-    myGltfModel = loader.loadModel("models/monkE3.glb");
     myGltfModel2 = loader.loadModel("models/catSkull.glb");
-    ground = loader.loadModel("models/levelFloor.glb");
-    pedestalBase = loader.loadModel("models/levelPedestalBase.glb");
-    pedestal = loader.loadModel("models/levelPedestal.glb");
-    platform2 = loader.loadModel("models/platform.glb");
+
 
     // ---- Load Model Texture ----
-    GLuint texID = testTexture->loadTexture("images/test_texture.jpg");
-    GLuint texID2 = testTexture->loadTexture("images/pedestal.jpg");
     GLuint texID3 = testTexture->loadTexture("images/bone2.jpg");
-    GLuint texID4 = testTexture->loadTexture("images/bricks.jpg");
-
 
 
     // ---- NEW MODEL LOADER ----
@@ -159,47 +128,8 @@ void _Scene::initGL()
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
 
 
-
-    // ---- Extra platform (reuse ground model as simple platform instance)
-    platform1 = loader.loadModel("models/ground.glb");
-
-        // Use ground/test texture instead of the red texture so platform matches scene
-        platform1->textureID = texID;
-        platform1->buildTriangleList();
-        platform1->uploadToGPU();
-
-        ground->buildTriangleList();
-        ground->uploadToGPU();
-
-        platform2->buildTriangleList();
-        platform2->uploadToGPU();
-
-
     // ---- Bind Model Texture ----
-    myGltfModel->textureID = texID;     //monke
     myGltfModel2->textureID = texID3;   //skull
-    ground->textureID = texID4;
-    pedestalBase->textureID = texID2;
-    pedestal->textureID = texID2;
-    platform2->textureID = texID4;
-
-    if (!myGltfModel) {
-        //std::cerr << "GLTF: Failed to load model\n";
-    }
-    else if (myGltfModel->vertices.empty() || myGltfModel->indices.empty()) {
-        //std::cerr << "GLTF: File parsed but contains no mesh\n";
-    }
-    else {
-        //std::cout << "GLTF: Uploading to GPU...\n";
-        myGltfModel->uploadToGPU();
-        //std::cout << "GLTF: Ready\n";
-    }
-
-    if (myGltfModel2) {
-        //std::cout << "GLTF2 verts: " << myGltfModel2->vertices.size()
-                //<< ", indices: " << myGltfModel2->indices.size()
-                //<< ", textureID: " << myGltfModel2->textureID << "\n";
-    }
 
 
     // ---- Video Loader ----
@@ -216,101 +146,13 @@ void _Scene::initGL()
 void _Scene::updateScene()
 {
     myTime->updateDeltaTime();
-
     myCam->rotateXY();
-
     animTime += myTime->deltaTime;
-
-
-    // Raycast down from camera to detect ground height
-    vec3 rayStart = myCam->eye;
-    vec3 rayDir   = {0, -1, 0};
 
     static float smoothDT = 0.16f;
     smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
 
-
-    float t;
-    vec3 hitPos;
-
-    // Check ground and additional platforms; transform triangles to world space first
-    float bestT = FLT_MAX;
-    vec3 bestHit = {0,0,0};
-    bool anyHit = false;
-
-    // Helper lambda to transform a model's triangles by its node root transform
-    // plus the scene translate/scale, and test raycast against the transformed tris.
-    auto testTransformed = [&](const GltfModel* model,
-                               float sx, float sy, float sz,
-                               float tx, float ty, float tz) {
-        if (!model) return;
-        const auto& srcTris = model->triangles;
-        if (srcTris.empty()) return;
-
-        // Build combined matrix: Mouter = Translate(tx,ty,tz) * Scale(sx,sy,sz)
-        glm::mat4 Mouter = glm::translate(glm::mat4(1.0f), glm::vec3(tx, ty, tz))
-                         * glm::scale(glm::mat4(1.0f), glm::vec3(sx, sy, sz));
-
-        // model root transform (if present)
-        glm::mat4 Mnode = glm::mat4(1.0f);
-        if (!model->nodeGlobalTransforms.empty()) {
-            Mnode = model->nodeGlobalTransforms[0];
-        }
-
-        glm::mat4 M = Mouter * Mnode; // final transform applied to model-space vertices
-
-        std::vector<Triangle> temp;
-        temp.reserve(srcTris.size());
-
-        for (const Triangle& tri : srcTris) {
-            Triangle ttri;
-            glm::vec4 a = M * glm::vec4(tri.a.x, tri.a.y, tri.a.z, 1.0f);
-            glm::vec4 b = M * glm::vec4(tri.b.x, tri.b.y, tri.b.z, 1.0f);
-            glm::vec4 c = M * glm::vec4(tri.c.x, tri.c.y, tri.c.z, 1.0f);
-            ttri.a = { a.x, a.y, a.z };
-            ttri.b = { b.x, b.y, b.z };
-            ttri.c = { c.x, c.y, c.z };
-            temp.push_back(ttri);
-        }
-
-        float localT; vec3 localHit;
-        if (myCol->raycastMeshNearest(rayStart, rayDir, temp, localT, localHit)) {
-            if (localT < bestT) { bestT = localT; bestHit = localHit; anyHit = true; }
-        }
-    };
-
-    // Do not include ground in collision tests; only platform1 is used for collisions
-    // (If you want the ground back later, re-enable building its triangle list.)
-
-    // platform1: translate(-8.0f, -3.0f, -8.0f); smaller scale to reduce footprint
-    if (platform1) testTransformed(platform1, 1.0f, 0.3f, 0.5f, -8.0f, -3.0f, -8.0f);
-    if (ground) testTransformed( ground, levelScale, levelScale, levelScale, 0.0f, -4.0f, 0.0f);
-    if (platform2) testTransformed( platform2, levelScale, levelScale, levelScale, 0.0f, -4.0f, -50.0f);
-
-    if (myInput && myCam) {
-    // 1. Horizontal movement FIRST (WASD)
     myInput->keyPressed(myCam, smoothDT);
-        }
-
-        // 2. Collision / raycast: determine groundY for THIS new position
-        if (anyHit) {
-            const float collisionEpsilon = 5.0f;
-            myCam->groundY = bestHit.y + collisionEpsilon;
-        }
-        else {
-            myCam->groundY = -9999; // camera is in the air / falling
-        }
-
-        // 3. Apply vertical physics AFTER collision has set groundY
-        myCam->update(smoothDT);
-        if (myCam->eye.y < -100.0f) {
-        // Reset camera to start position
-        myCam->eye = myCam->startEye;
-        myCam->des = myCam->startDes;
-        myCam->verticalVel = 0.0f;
-        myCam->isJumping = false;
-        myCam->isLanding = false;
-    }
 }
 
 
@@ -351,30 +193,7 @@ void _Scene::drawScene()
     glPopMatrix();
 
 
-    // ---- Draw GLTF Models ----
-    glPushMatrix();
-
-    // Draw extra platforms
-    if (platform1) {
-        glPushMatrix();
-            // Left platform (moved further left and forward) - smaller footprint
-            glTranslatef(-8.0f, -3.0f, -8.0f);
-            glScalef(1.0f, 0.3f, 0.5f);
-            glColor3f(1,1,1);
-            if (platform1->textureID != 0) { glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, platform1->textureID); }
-            //platform1->draw();
-            if (platform1->textureID != 0) glBindTexture(GL_TEXTURE_2D, 0);
-        glPopMatrix();
-    }
-
-    // (Only one platform is used now)
-
-    // Ground drawing disabled — only `platform1` should be visible as the single platform
-        glTranslatef(0, 0, -20);
-        glScalef(1, 1, 1);
-        glColor3f(1,1,1);
-        //myGltfModel->draw();
-    glPopMatrix();
+    // ---- Draw GLTF Models (OLD LOADER) ----
 
     //animate skull up & down
     time = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
@@ -472,9 +291,7 @@ void _Scene::drawScene()
     }
 
 
-
-
-
+    // ---- Intro Cutscene ----
     /*
     if (!introCutscene->finished)
     {
@@ -513,36 +330,26 @@ void _Scene::drawScene()
 
 
 
-
-
-
+    // ---- Outro Cutscene ----
     if (levelComplete)
     {
         cutScene1->update(myTime->deltaTime);
-        // Save your current matrices
+
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
-        // Switch to orthographic screen coordinates
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-
-        // ENABLE textures now
         glEnable(GL_TEXTURE_2D);
-
-        // Bind your video frame texture
         glBindTexture(GL_TEXTURE_2D, cutScene1->getCurrentTexture());
-
-        // Make sure color doesn't tint it
         glColor4f(1, 1, 1, 1);
 
-        // Draw textured fullscreen quad (FLIPPED V so video is upright)
         glBegin(GL_QUADS);
 
             glTexCoord2f(0, 1);   // was (0,0)
@@ -559,13 +366,12 @@ void _Scene::drawScene()
 
         glEnd();
 
-        // Restore previous matrices
+
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
 
-        // Reset state
         glColor4f(1,1,1,1);
     }
 
@@ -578,10 +384,7 @@ int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
     case WM_KEYDOWN:
         myInput->wParam = wParam;
-        //myInput->keyPressed(mySkyBox);        ----OLD----
-        //myInput->keyPressed(myCam);           ----OLD----
-        //if (!levelComplete) ---- USE LATER ----
-            myInput->keys[wParam] = true;
+        myInput->keys[wParam] = true;
         break;
 
     case WM_KEYUP:
@@ -589,36 +392,9 @@ int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         myInput->keys[wParam] = false;
         break;
 
-    case WM_LBUTTONDOWN:
-        //myInput->mouseEventDown(model, LOWORD(lParam), HIWORD(lParam));           ----OLD----
-        clickCount = clickCount % 10;
-
-        b[clickCount].src.x = mdl3D->pos.x;
-        b[clickCount].src.y = mdl3D->pos.y;
-        b[clickCount].src.z = mdl3D->pos.z;
-
-        b[clickCount].des.x = msX;
-        b[clickCount].des.y = -msY;
-        b[clickCount].des.z = msZ;
-
-        b[clickCount].t = 0;
-        b[clickCount].actionTrigger = b[clickCount].SHOOT;
-        b[clickCount].isAlive = true;
-
-        clickCount++;
-
-        snds->playSound("sounds/untitled2.mp3");
-        break;
-
     case WM_MOUSEMOVE:
-        //if (!levelComplete) ---- USE LATER ----
-            myInput->mouseMove(myCam, LOWORD(lParam), HIWORD(lParam));
-        break;
-
-    case WM_MOUSEWHEEL:
-        myInput->mouseWheel(myModel, (double)GET_WHEEL_DELTA_WPARAM(wParam));
+        myInput->mouseMove(myCam, LOWORD(lParam), HIWORD(lParam));
         break;
     }
-
     return 0;
 }
