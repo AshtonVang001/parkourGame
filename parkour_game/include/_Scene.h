@@ -21,6 +21,7 @@
 #include <shader.h>
 #include <_videoLoader.h>
 
+
 class _Scene
 {
 public:
@@ -34,6 +35,7 @@ public:
     void updateScene();
     void mouseMapping(int, int);
     void resetScene();
+    void checkCameraStep(_camera *, float);
     int winMsg(HWND, UINT, WPARAM, LPARAM);
 
 
@@ -82,6 +84,12 @@ public:
     GLTFModel levelPlatforms;
     GLTFModel spinPlatform;
     GLTFModel movePlatform;
+
+    std::vector<GLTFModel*> platforms = {
+    &levelPlatforms,
+    &spinPlatform,
+    &movePlatform
+    };
 
     Shader* gltfShader = nullptr;
 

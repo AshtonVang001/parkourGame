@@ -615,3 +615,37 @@ void GLTFModel::draw() {
     glBindVertexArray(0);
     //printf("[DEBUG] draw() finished\n");
 }
+
+vec3 GLTFModel::getMinBounds() const
+{
+    if (triangles.empty()) return {0,0,0};
+
+    vec3 minB = triangles[0].a;
+
+    for (const auto& tri : triangles)
+    {
+        minB.x = std::min(std::min(minB.x, tri.a.x), std::min(tri.b.x, tri.c.x));
+        minB.y = std::min(std::min(minB.y, tri.a.y), std::min(tri.b.y, tri.c.y));
+        minB.z = std::min(std::min(minB.z, tri.a.z), std::min(tri.b.z, tri.c.z));
+
+    }
+
+    return minB;
+}
+
+vec3 GLTFModel::getMaxBounds() const
+{
+    if (triangles.empty()) return {0,0,0};
+
+    vec3 maxB = triangles[0].a;
+
+    for (const auto& tri : triangles)
+    {
+        maxB.x = std::max(std::max(maxB.x, tri.a.x), std::max(tri.b.x, tri.c.x));
+        maxB.y = std::max(std::max(maxB.y, tri.a.y), std::max(tri.b.y, tri.c.y));
+        maxB.z = std::max(std::max(maxB.z, tri.a.z), std::max(tri.b.z, tri.c.z));
+
+    }
+
+    return maxB;
+}

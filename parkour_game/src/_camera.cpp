@@ -150,46 +150,57 @@ void _camera::updateVertical(float deltaTime)
 {
     if (isJumping)
     {
+        // Apply gravity
         verticalVel += gravity * deltaTime;
         float nextY = eye.y + verticalVel * deltaTime;
 
+        // Check for landing
         if (nextY <= groundY)
         {
             nextY = groundY;
             verticalVel = 0.0f;
             isJumping = false;
-            // Start a short smooth return to the starting pose instead of snapping
-            // initialize landing interpolation
+
+            // Record landing target for smooth interpolation
+            landingTargetEye.x = eye.x;
+            landingTargetEye.y = nextY;
+            landingTargetEye.z = eye.z;
+
+            landingTargetDes.x = des.x;
+            landingTargetDes.y = des.y;
+            landingTargetDes.z = des.z;
+
             landingTimer = 0.0f;
-            landingDuration = 0.12f; // seconds to lerp back
             isLanding = true;
         }
 
+        // Apply vertical movement
         eye.y = nextY;
-
         des = eye + lookDir;
     }
     else if (isLanding)
     {
-        // Smoothly interpolate camera from current pose back to startEye/startDes
+        // Smoothly interpolate camera to landing target
         landingTimer += deltaTime;
         float t = landingTimer / landingDuration;
-        if (t >= 1.0f) {
-            // finish interpolation
-            eye = startEye;
-            des = startDes;
+        if (t >= 1.0f)
+        {
+            eye = landingTargetEye;
+            des = landingTargetDes;
             isLanding = false;
-        } else {
-            // lerp each component
-            eye.x = lerp(eye.x, startEye.x, t);
-            eye.y = lerp(eye.y, startEye.y, t);
-            eye.z = lerp(eye.z, startEye.z, t);
-
-            des.x = lerp(des.x, startDes.x, t);
-            des.y = lerp(des.y, startDes.y, t);
-            des.z = lerp(des.z, startDes.z, t);
         }
-        // ensure lookDir matches des - eye
+        else
+        {
+            eye.x = lerp(eye.x, landingTargetEye.x, t);
+            eye.y = lerp(eye.y, landingTargetEye.y, t);
+            eye.z = lerp(eye.z, landingTargetEye.z, t);
+
+            des.x = lerp(des.x, landingTargetDes.x, t);
+            des.y = lerp(des.y, landingTargetDes.y, t);
+            des.z = lerp(des.z, landingTargetDes.z, t);
+        }
+
+        // Ensure lookDir matches des - eye
         lookDir = des - eye;
     }
 }
