@@ -121,6 +121,11 @@ void _Scene::initGL()
     movePlatform.load("models/movePlatform.glb");
     movePlatform.setActiveAnimation(0);
 
+    platforms.push_back(&levelPlatforms);
+    platforms.push_back(&spinPlatform);
+    platforms.push_back(&movePlatform);
+    platforms.push_back(&myNewModel);  // you said this is a floor too
+
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
 
 
@@ -138,6 +143,63 @@ void _Scene::initGL()
 
 }
 
+void _Scene::checkCameraStep(_camera* cam, float dt)
+{
+    float camHeight = 1.8f; // approximate camera/player height
+    vec3 camFeet = cam->eye;
+    camFeet.y -= camHeight / 2.0f;
+    cam->groundY = -9999.0f; // reset for this frame
+    cam->isJumping = cam->isJumping; // keep existing jump state
+    float newGroundY = -9999.0f; // declare here
+
+    for (GLTFModel* plat : platforms)
+    {
+        // 1. AABB check (XZ plane)
+        vec3 minB = plat->getMinBounds(); // implement in GLTFModel
+        vec3 maxB = plat->getMaxBounds();
+
+        if (myCol->pointInAABB({cam->eye.x, 0, cam->eye.z},
+                                        {minB.x, 0, minB.z},
+                                        {maxB.x, 0, maxB.z}))
+        {
+            float stepHeight = 0.3f;
+            float dist = camFeet.y - maxB.y;
+            if (dist < 0 && dist > -stepHeight)
+            {
+                cam->groundY = maxB.y + camHeight / 2.0f;
+                break;
+            }
+        }
+
+        // 2. Raycast against platform triangles for sloped or rotated platforms
+        if (!plat->triangles.empty())
+        {
+            vec3 rayDir = {0, -1, 0};
+            float t;
+            vec3 hitPos;
+            if (myCol->raycastMeshNearest(camFeet, rayDir, plat->triangles, t, hitPos))
+            {
+                float stepDist = camFeet.y - hitPos.y;
+                if (stepDist <= 0.3f)
+                {
+                    cam->groundY = hitPos.y + camHeight / 2.0f;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Only adjust Y if camera is below the new ground
+    if (cam->eye.y < newGroundY)
+    {
+        cam->eye.y = newGroundY;
+        cam->des.y = cam->eye.y + cam->lookDir.y;
+        cam->isJumping = false; // landed
+    }
+
+    cam->groundY = newGroundY;
+}
+
 
 void _Scene::updateScene()
 {
@@ -149,6 +211,9 @@ void _Scene::updateScene()
     smoothDT = (smoothDT * 0.9f) + (myTime->deltaTime * 0.1f);
 
     myInput->keyPressed(myCam, smoothDT);
+
+
+
 }
 
 

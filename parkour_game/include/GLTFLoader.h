@@ -19,6 +19,8 @@
 #include "SOIL2.h"
 #include "_timer.h"
 
+#include <gltfModel.h>
+
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
@@ -99,6 +101,11 @@ public:
     std::vector<Material> materials;
     std::vector<Skin> skins;
     std::vector<Animation> animations;
+
+    std::vector<Triangle> triangles;
+
+    vec3 getMinBounds() const;
+    vec3 getMaxBounds() const;
 
 private:
     bool loadCgltfFile(const std::string& filename);

@@ -68,6 +68,11 @@ class _camera
         float landingTimer = 0.0f;
         float landingDuration = 0.0f;
 
+        float velY = 0.0f;
+
+        vec3 landingTargetEye;
+        vec3 landingTargetDes;
+
 
 
 
