@@ -114,20 +114,14 @@ void VideoLoader::update(float deltaTime)
         if (currentFrame > lastFrame)
         {
             if (loop)
-            {
                 currentFrame = firstFrame; // loop again
-            }
             else
             {
-                currentFrame = lastFrame;  // stop at last frame
+                currentFrame = lastFrame;
                 if (!finished)
                 {
-                    finished = true;        // mark as finished
-                    playing = false;        // stop playback
-                    std::cout << "Done!" << std::endl; // print Done!
-
-                    if (onFinished)
-                        onFinished();      // trigger callback
+                    finished = true;
+                    playing = false;
                 }
             }
         }
@@ -145,6 +139,9 @@ void VideoLoader::render()
 
 GLuint VideoLoader::getCurrentTexture() const
 {
+    if (!playing)
+        return 0; // don't display any frame until play is called
+
     if (mode == VideoMode::PRELOAD)
     {
         int index = currentFrame - firstFrame;
@@ -152,7 +149,9 @@ GLuint VideoLoader::getCurrentTexture() const
         return frames[index];
     }
     else
+    {
         return streamTexture;
+    }
 }
 
 void VideoLoader::reset()
@@ -221,6 +220,21 @@ std::string VideoLoader::buildFramePath(int frameNumber) const
     ss << folder << "/" << namePrefix << std::setw(4)
        << std::setfill('0') << frameNumber << ".bmp";
     return ss.str();
+}
+
+void VideoLoader::playOnce()
+{
+    loop = false;
+    currentFrame = firstFrame;
+    timeAccumulator = 0.0f;
+    playing = true;
+    finished = false;
+
+    // Force the first frame to be loaded and ready
+    if (mode == VideoMode::STREAM)
+        loadFrameStream(currentFrame);
+
+    // For PRELOAD, nothing special needed — frames already loaded
 }
 
 

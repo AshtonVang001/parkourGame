@@ -36,9 +36,14 @@ public:
 
     std::function<void()> onFinished = nullptr;
     bool finished = false;
-    void playOnce() { loop = false; play(); finished = false; }
+    void playOnce();// { loop = false; play(); finished = false; }
 
     GLuint getCurrentTexture() const;
+
+    bool loop;
+    bool playing;
+    float timeAccumulator;
+    int currentFrame;
 
 private:
     // General
@@ -47,10 +52,6 @@ private:
     int firstFrame;
     int lastFrame;
     float frameDuration;
-    float timeAccumulator;
-    int currentFrame;
-    bool loop;
-    bool playing;
     VideoMode mode;
 
     // PRELOAD MODE

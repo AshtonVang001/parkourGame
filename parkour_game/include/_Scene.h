@@ -59,6 +59,7 @@ public:
 
     // bool
     bool levelComplete = false;
+    bool startLevel = false;
 
 
     // ---- Objects ----

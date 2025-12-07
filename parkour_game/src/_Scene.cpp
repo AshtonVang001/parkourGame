@@ -132,16 +132,15 @@ void _Scene::initGL()
     cutScene1->load("videos/cutscene1", "cutscene", 1, 85, 24.0f, VideoMode::STREAM);
     cutScene1->playOnce();
 
-    introCutscene->load("videos/introCutscene", "intro", 1, 100, 24.0f, VideoMode::PRELOAD);
-    //introCutscene->playOnce();
-
-
+    introCutscene->load("videos/introCutscene", "intro", 1, 100, 24.0f, VideoMode::STREAM);
+    introCutscene->playOnce();
 }
 
 
 void _Scene::updateScene()
 {
     myTime->updateDeltaTime();
+
     myCam->rotateXY();
     animTime += myTime->deltaTime;
 
@@ -288,8 +287,7 @@ void _Scene::drawScene()
 
 
     // ---- Intro Cutscene ----
-    /*
-    if (!introCutscene->finished)
+    if (startLevel && !introCutscene->finished)
     {
         introCutscene->update(myTime->deltaTime);
 
@@ -321,10 +319,9 @@ void _Scene::drawScene()
         glPopMatrix();
 
         glColor4f(1,1,1,1); // reset color
+
+
     }
-    */
-
-
 
     // ---- Outro Cutscene ----
     if (levelComplete)

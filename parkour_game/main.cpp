@@ -20,6 +20,7 @@
 #include <_mainMenu.h>
 #include <_sounds.h>
 #include <_camera.h>
+#include <_videoLoader.h>
 
 _Scene *myScene = new _Scene();     //create scene class instance
 _mainMenu *myMenu = new _mainMenu();
@@ -30,6 +31,7 @@ _sounds *sceneSnds = new _sounds();
 _camera *myCamera = new _camera();
 
 int previousScene = -1;
+static float introDelay = 0.0f;
 
 using namespace std;
 
@@ -416,6 +418,8 @@ int WINAPI WinMain(
 
                 POINT center;
 
+                introDelay += myScene->myTime->deltaTime;
+
 
                 static bool prevH = false;
                 bool currentH = keys['H'];
@@ -434,7 +438,13 @@ int WINAPI WinMain(
                 switch (sceneSwitcher->currentScene)
                 {
                     case SCENE_GAME:
+
                         myMenu->snds->stopSounds();
+                        if (introDelay >= 1.0f && !myScene->startLevel)
+                        {
+                            myScene->startLevel = true;
+                            introDelay = 0.0f; // reset if you want
+                        }
 
                         ShowCursor(FALSE);
                         myScene->updateScene();                   // update with delta time
