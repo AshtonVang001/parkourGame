@@ -17,8 +17,6 @@ _Scene::_Scene()
     myCam = nullptr;
     myCol = nullptr;
     snds = nullptr;
-    myGltfModel = nullptr;
-    platform1 = nullptr;
 }
 
 _Scene::~_Scene()
@@ -31,8 +29,6 @@ _Scene::~_Scene()
     delete myCam;
     delete myCol;
     delete snds;
-    delete myGltfModel;
-    delete platform1;
 }
 
 void _Scene::reSizeScene(int width, int height)
