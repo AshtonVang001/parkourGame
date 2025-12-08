@@ -8,6 +8,7 @@
 #include <_camera.h>
 #include <_3DModelLoader.h>
 #include <_sceneSwitcher.h>
+#include <_hitboxes.h>
 
 class _inputs
 {
@@ -47,6 +48,8 @@ class _inputs
         LPARAM lParam;
 
         float newFov = 60.0f;
+
+        _hitboxes hitboxSystem;
 
     protected:
 

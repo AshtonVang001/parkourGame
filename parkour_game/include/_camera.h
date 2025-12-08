@@ -5,6 +5,7 @@
 #include <_collisionCheck.h>
 #include <_gltfLoader.h>
 #include <gltfModel.h>
+#include <_hitboxes.h>
 
 class gltfModel;
 class _collisionCheck;
@@ -48,7 +49,7 @@ class _camera
 
         // In _camera.h
         void jump();
-        void updateVertical(float);
+        void updateVertical(float deltaTime, _hitboxes* hitboxes);
         float lerp(float, float, float);
 
         void update(float);
@@ -60,10 +61,8 @@ class _camera
 
         float targetY;
         vec3 lookDir;
-        // store camera position at jump start so we can restore after landing
         vec3 startEye;
         vec3 startDes;
-        // landing interpolation state
         bool isLanding = false;
         float landingTimer = 0.0f;
         float landingDuration = 0.0f;
@@ -73,7 +72,9 @@ class _camera
         vec3 landingTargetEye;
         vec3 landingTargetDes;
 
+        _hitboxes* hitboxes;
 
+        float playerHeight = 8;
 
 
     protected:

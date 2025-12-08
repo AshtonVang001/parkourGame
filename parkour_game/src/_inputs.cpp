@@ -6,6 +6,8 @@ _inputs::_inputs()
     isRotationActive = false;
     isTranslationActive = false;
     //isScalingActive = false;
+
+    hitboxSystem.populateHitboxes();
 }
 
 _inputs::~_inputs()
@@ -15,16 +17,13 @@ _inputs::~_inputs()
 
 void _inputs::keyPressed(_camera* myCamera, float deltaTime)
 {
-    //cout << wParam << endl;           //to get keyboard input
 
 
     float moveSpeed = 40.0f * deltaTime;
-    //newFov = 60.0f;
 
     // ---- Sprint ----
     if (keys[16])
         moveSpeed *= 1.5;
-        //newFov = 75.0f;
 
     // ---- Forward / Back ----
     if (keys['W'])
@@ -43,7 +42,8 @@ void _inputs::keyPressed(_camera* myCamera, float deltaTime)
         myCamera->jump();
 
     // ---- Update vertical pos ----
-    myCamera->updateVertical(deltaTime);
+    myCamera->updateVertical(deltaTime, &hitboxSystem);
+
 }
 
 void _inputs::keyUp()

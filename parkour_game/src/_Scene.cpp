@@ -17,6 +17,7 @@ _Scene::_Scene()
     myCam = nullptr;
     myCol = nullptr;
     snds = nullptr;
+    myHitboxes = nullptr;
 }
 
 _Scene::~_Scene()
@@ -29,6 +30,7 @@ _Scene::~_Scene()
     delete myCam;
     delete myCol;
     delete snds;
+    delete myHitboxes;
 }
 
 void _Scene::reSizeScene(int width, int height)
@@ -70,6 +72,7 @@ void _Scene::initGL()
     myCam    = new _camera();
     myCol    = new _collisionCheck();
     snds     = new _sounds();
+    myHitboxes = new _hitboxes();
 
     myTime->startTime = clock();
 
@@ -121,10 +124,6 @@ void _Scene::initGL()
     movePlatform.load("models/movePlatform.glb");
     movePlatform.setActiveAnimation(0);
 
-    platforms.push_back(&levelPlatforms);
-    platforms.push_back(&spinPlatform);
-    platforms.push_back(&movePlatform);
-    platforms.push_back(&myNewModel);  // you said this is a floor too
 
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
 
@@ -141,64 +140,6 @@ void _Scene::initGL()
     introCutscene->playOnce();
 }
 
-void _Scene::checkCameraStep(_camera* cam, float dt)
-{
-    float camHeight = 1.8f; // approximate camera/player height
-    vec3 camFeet = cam->eye;
-    camFeet.y -= camHeight / 2.0f;
-    cam->groundY = -9999.0f; // reset for this frame
-    cam->isJumping = cam->isJumping; // keep existing jump state
-    float newGroundY = -9999.0f; // declare here
-
-    for (GLTFModel* plat : platforms)
-    {
-        // 1. AABB check (XZ plane)
-        vec3 minB = plat->getMinBounds(); // implement in GLTFModel
-        vec3 maxB = plat->getMaxBounds();
-
-        if (myCol->pointInAABB({cam->eye.x, 0, cam->eye.z},
-                                        {minB.x, 0, minB.z},
-                                        {maxB.x, 0, maxB.z}))
-        {
-            float stepHeight = 0.3f;
-            float dist = camFeet.y - maxB.y;
-            if (dist < 0 && dist > -stepHeight)
-            {
-                cam->groundY = maxB.y + camHeight / 2.0f;
-                break;
-            }
-        }
-
-        // 2. Raycast against platform triangles for sloped or rotated platforms
-        if (!plat->triangles.empty())
-        {
-            vec3 rayDir = {0, -1, 0};
-            float t;
-            vec3 hitPos;
-            if (myCol->raycastMeshNearest(camFeet, rayDir, plat->triangles, t, hitPos))
-            {
-                float stepDist = camFeet.y - hitPos.y;
-                if (stepDist <= 0.3f)
-                {
-                    cam->groundY = hitPos.y + camHeight / 2.0f;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Only adjust Y if camera is below the new ground
-    if (cam->eye.y < newGroundY)
-    {
-        cam->eye.y = newGroundY;
-        cam->des.y = cam->eye.y + cam->lookDir.y;
-        cam->isJumping = false; // landed
-    }
-
-    cam->groundY = newGroundY;
-}
-
-
 void _Scene::updateScene()
 {
     myTime->updateDeltaTime();
@@ -212,7 +153,6 @@ void _Scene::updateScene()
     myInput->keyPressed(myCam, smoothDT);
 
 
-
 }
 
 
@@ -222,7 +162,7 @@ void _Scene::drawScene()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)width / (float)height;
-    gluPerspective(fov, aspect, 0.1f, 10000.0f);
+    gluPerspective(60.0f, aspect, 0.1f, 10000.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -256,27 +196,51 @@ void _Scene::drawScene()
     // ---- Draw GLTF Models (OLD LOADER) ----
 
     //animate skull up & down
-    time = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+
+    // ---- Right ----
+    float skull1X = 7.5f;
+    float skull1Z = -16.0f;
+
+    float playerX = myCam->eye.x;
+    float playerZ = myCam->eye.z;
+
+    float dx1 = playerX - skull1X;
+    float dz1 = playerZ - skull1Z;
+
+    float angleY1 = atan2(dx1, dz1) * (180.0f / M_PI);
+
+    // animate skull up/down
+    time  = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
     yOffset = amplitude * sin(time * speed);
 
-    //skulls
     glPushMatrix();
-        glTranslatef(7.5, 7 + yOffset, -16);
+        glTranslatef(skull1X, 7 + yOffset, skull1Z);
+        glRotatef(angleY1, 0, 1, 0); // <-- makes it look at player
+        glRotatef(30, 1, 0, 0);
         glScalef(2.5, 2.5, 2.5);
         glColor3f(1,1,1);
-        glRotatef(-20, 0, 1, 0);
-        glRotatef(30, 1, 0, 0);
         myGltfModel2->draw();
     glPopMatrix();
 
+    // ---- Left ----
+    float skull2X = -7.5f;
+    float skull2Z = -16.0f;
+
+    float dx2 = playerX - skull2X;
+    float dz2 = playerZ - skull2Z;
+
+    float angleY2 = atan2(dx2, dz2) * (180.0f / M_PI);
+
     glPushMatrix();
-        glTranslatef(-7.5, 7 - yOffset, -16);
+        glTranslatef(skull2X, 7 - yOffset, skull2Z);
+        glRotatef(angleY2, 0, 1, 0);
+        glRotatef(30, 1, 0, 0);
         glScalef(2.5, 2.5, 2.5);
         glColor3f(1,1,1);
-        glRotatef(20, 0, 1, 0);
-        glRotatef(30, 1, 0, 0);
         myGltfModel2->draw();
     glPopMatrix();
+
+
 
 
 
@@ -344,8 +308,9 @@ void _Scene::drawScene()
 
 
 
+
     // ---- Video Loader ----
-    if (fabs(myCam->eye.z + 440.0f) < 2 && fabs(myCam->eye.x + 0) < 2) {
+    if (fabs(myCam->eye.z + 440.0f) < 2 && fabs(myCam->eye.x + 0) < 2 && fabs(myCam->eye.y + 0) < 4) {
         levelComplete = true;
         //cout << "Level Complete!" << endl;
     }
@@ -383,9 +348,7 @@ void _Scene::drawScene()
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
 
-        glColor4f(1,1,1,1); // reset color
-
-
+        glColor4f(1,1,1,1);
     }
 
     // ---- Outro Cutscene ----
@@ -434,6 +397,10 @@ void _Scene::drawScene()
     }
 
 
+    // ---- hitboxes ----
+    myHitboxes->drawHitboxes();
+    if (showHitBoxes)
+        myHitboxes->debugBoxes();
 }
 
 int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

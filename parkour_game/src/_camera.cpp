@@ -12,7 +12,9 @@ _camera::~_camera()
 
 void _camera::camInit()
 {
-    eye.x = eye.y = 0;
+    // Raise camera start above the platforms
+    eye.x = 0;
+    eye.y = 0;
     eye.z = 10;
 
     des.x = des.y = des.z = 0;
@@ -30,11 +32,12 @@ void _camera::camInit()
     isJumping = false;
     gravity = -40.0f;
     groundY = eye.y;
+
+    // Update start positions to match new height
     startEye = eye;
     startDes = des;
-
-
 }
+
 
 void _camera::camReset()
 {
@@ -137,73 +140,43 @@ void _camera::setUpCamera()
 void _camera::jump()
 {
     if (!isJumping) {
-        verticalVel = 15.0f;   // jump strength
+        verticalVel = 16.0f;
         isJumping = true;
-        // store starting camera position to restore after landing
         startEye = eye;
         startDes = des;
     }
 }
 
 
-void _camera::updateVertical(float deltaTime)
+void _camera::updateVertical(float deltaTime, _hitboxes* hitboxes)
 {
-    if (isJumping)
+    verticalVel += gravity * deltaTime;
+    eye.y += verticalVel * deltaTime;
+
+    des = eye + lookDir;
+
+    float floorY = hitboxes->raycastY(eye);
+    float buffer = 0.1f;
+
+    if (eye.y - playerHeight <= floorY + buffer)
     {
-        // Apply gravity
-        verticalVel += gravity * deltaTime;
-        float nextY = eye.y + verticalVel * deltaTime;
-
-        // Check for landing
-        if (nextY <= groundY)
-        {
-            nextY = groundY;
-            verticalVel = 0.0f;
-            isJumping = false;
-
-            // Record landing target for smooth interpolation
-            landingTargetEye.x = eye.x;
-            landingTargetEye.y = nextY;
-            landingTargetEye.z = eye.z;
-
-            landingTargetDes.x = des.x;
-            landingTargetDes.y = des.y;
-            landingTargetDes.z = des.z;
-
-            landingTimer = 0.0f;
-            isLanding = true;
-        }
-
-        // Apply vertical movement
-        eye.y = nextY;
-        des = eye + lookDir;
+        eye.y = floorY + buffer + playerHeight;
+        verticalVel = 0.0f;
+        isJumping = false;
     }
-    else if (isLanding)
+
+    // Kill plane reset
+    if (eye.y <= -100.0f)
     {
-        // Smoothly interpolate camera to landing target
-        landingTimer += deltaTime;
-        float t = landingTimer / landingDuration;
-        if (t >= 1.0f)
-        {
-            eye = landingTargetEye;
-            des = landingTargetDes;
-            isLanding = false;
-        }
-        else
-        {
-            eye.x = lerp(eye.x, landingTargetEye.x, t);
-            eye.y = lerp(eye.y, landingTargetEye.y, t);
-            eye.z = lerp(eye.z, landingTargetEye.z, t);
-
-            des.x = lerp(des.x, landingTargetDes.x, t);
-            des.y = lerp(des.y, landingTargetDes.y, t);
-            des.z = lerp(des.z, landingTargetDes.z, t);
-        }
-
-        // Ensure lookDir matches des - eye
-        lookDir = des - eye;
+        eye = {0.0f, 0.0f, 0.0f};
+        des = {0.0f, 0.0f, 0.0f};
+        verticalVel = 0.0f;
+        isJumping = false; // optional, so you can jump immediately
     }
 }
+
+
+
 
 float _camera::lerp(float a, float b, float t)
 {

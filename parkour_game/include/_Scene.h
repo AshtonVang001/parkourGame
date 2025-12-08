@@ -20,6 +20,7 @@
 #include <GLTFLoader.h>
 #include <shader.h>
 #include <_videoLoader.h>
+#include <_hitboxes.h>
 
 
 class _Scene
@@ -63,6 +64,8 @@ public:
     bool levelComplete = false;
     bool startLevel = false;
 
+    bool showHitBoxes = false;
+
 
     // ---- Objects ----
     _timer *myTime;
@@ -74,6 +77,7 @@ public:
     _collisionCheck *myCol;
     _sounds *snds;
     _sceneSwitcher *sceneSwitcher = new _sceneSwitcher();
+    _hitboxes *myHitboxes;
 
     VideoLoader *testVideo = new VideoLoader();
     VideoLoader *cutScene1 = new VideoLoader();

@@ -422,12 +422,16 @@ int WINAPI WinMain(
 
 
                 static bool prevH = false;
+                static bool prevB = false;
                 bool currentH = keys['H'];
+                bool currentB = keys['B'];
+
+
 
                 if (sceneSwitcher->currentScene != previousScene) {
 
                     if (sceneSwitcher->currentScene == SCENE_GAME) {
-                        sceneSnds->eng->setSoundVolume(0.06f);
+                        sceneSnds->eng->setSoundVolume(0.2f);
                         sceneSnds->playMusic("sounds/gameMusic.wav");   // play once on entering game
                     }
 
@@ -468,6 +472,9 @@ int WINAPI WinMain(
                             sceneSwitcher->currentScene = SCENE_MENU;
                         }
 
+                        if (currentB && !prevB) {
+                            myScene->showHitBoxes = !myScene->showHitBoxes;
+                        }
                         if (keys[VK_SHIFT]) {
                             myScene->fov = 65.0f;
                             myCamera->fov = 65.0f;
@@ -500,6 +507,7 @@ int WINAPI WinMain(
                         break;
                 }
                 prevH = currentH;
+                prevB = currentB;
 
 				SwapBuffers(hDC);	    // Swap Buffers (Double Buffering)
 			}
