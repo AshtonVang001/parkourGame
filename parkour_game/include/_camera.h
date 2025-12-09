@@ -74,7 +74,8 @@ class _camera
 
         _hitboxes* hitboxes;
 
-        float playerHeight = 8;
+        float playerHeight = 4.5;
+        bool died = false;
 
 
     protected:

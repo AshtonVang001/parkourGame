@@ -1,5 +1,5 @@
-#ifndef _SCENE_H
-#define _SCENE_H
+#ifndef _SCENE_2_H
+#define _SCENE_2_H
 
 #include <_common.h>
 #include <_light.h>
@@ -21,14 +21,13 @@
 #include <shader.h>
 #include <_videoLoader.h>
 #include <_hitboxes.h>
-#include <_Scene.h>
 
 
-class _Scene
+class _Scene2
 {
 public:
-    _Scene();
-    virtual ~_Scene();
+    _Scene2();
+    virtual ~_Scene2();
 
     // ---- Functions ----
     void initGL();
@@ -80,7 +79,6 @@ public:
     _sceneSwitcher *sceneSwitcher = new _sceneSwitcher();
     _hitboxes *myHitboxes;
 
-
     bool deathOverlayActive = false;
     float deathTimer = 0.0f;
     float deathScale = 1.4f;
@@ -108,6 +106,7 @@ public:
     Shader* gltfShader = nullptr;
 
 
+
     // ---- load models (OLD) ----
     _gltfLoader loader;
     GltfModel* myGltfModel2;
@@ -122,4 +121,4 @@ protected:
 private:
 };
 
-#endif // _SCENE_H
+#endif // _SCENE_2_H

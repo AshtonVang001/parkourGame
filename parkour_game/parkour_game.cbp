@@ -51,11 +51,13 @@
 		<Unit filename="include/GLTFLoader.h" />
 		<Unit filename="include/_3DModelLoader.h" />
 		<Unit filename="include/_Scene.h" />
+		<Unit filename="include/_Scene2.h" />
 		<Unit filename="include/_bullets.h" />
 		<Unit filename="include/_camera.h" />
 		<Unit filename="include/_collisionCheck.h" />
 		<Unit filename="include/_common.h" />
 		<Unit filename="include/_gltfLoader.h" />
+		<Unit filename="include/_hitboxes.h" />
 		<Unit filename="include/_inputs.h" />
 		<Unit filename="include/_light.h" />
 		<Unit filename="include/_mainMenu.h" />
@@ -75,10 +77,12 @@
 		<Unit filename="src/GLTFLoader.cpp" />
 		<Unit filename="src/_3DModelLoader.cpp" />
 		<Unit filename="src/_Scene.cpp" />
+		<Unit filename="src/_Scene2.cpp" />
 		<Unit filename="src/_bullets.cpp" />
 		<Unit filename="src/_camera.cpp" />
 		<Unit filename="src/_collisionCheck.cpp" />
 		<Unit filename="src/_gltfLoader.cpp" />
+		<Unit filename="src/_hitboxes.cpp" />
 		<Unit filename="src/_inputs.cpp" />
 		<Unit filename="src/_light.cpp" />
 		<Unit filename="src/_mainMenu.cpp" />

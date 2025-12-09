@@ -14,13 +14,13 @@ void _camera::camInit()
 {
     // Raise camera start above the platforms
     eye.x = 0;
-    eye.y = 0;
-    eye.z = 10;
+    eye.y = 600;
+    eye.z = 0;
 
     des.x = des.y = des.z = 0;
 
     up.x = up.z = 0;
-    up.y = 1;
+    up.y = 5;
 
     step = 0.5;
 
@@ -36,6 +36,8 @@ void _camera::camInit()
     // Update start positions to match new height
     startEye = eye;
     startDes = des;
+
+    died = false;
 }
 
 
@@ -47,7 +49,7 @@ void _camera::camReset()
     des.x = des.y = des.z = 0;
 
     up.x = up.z = 0;
-    up.y = 1;
+    up.y = 5;
 
     step = 0.5;
 
@@ -168,10 +170,12 @@ void _camera::updateVertical(float deltaTime, _hitboxes* hitboxes)
     // Kill plane reset
     if (eye.y <= -100.0f)
     {
-        eye = {0.0f, 0.0f, 0.0f};
+        died = true;
+        /*eye = {0.0f, 0.0f, 0.0f};
         des = {0.0f, 0.0f, 0.0f};
         verticalVel = 0.0f;
         isJumping = false; // optional, so you can jump immediately
+        */
     }
 }
 
@@ -209,6 +213,7 @@ void _camera::update(float dt)
     // predict Y before collision
     float predictedY = eye.y;
 
+    /*
     if (isJumping) {
         verticalVel += gravity * dt;
         predictedY += verticalVel * dt;
@@ -223,6 +228,7 @@ void _camera::update(float dt)
         verticalVel = 0;
         isJumping = false;
     }
+    */
 
     //
     // 4. Apply the corrected Y

@@ -1,11 +1,11 @@
-#include "_Scene.h"
+#include "_Scene2.h"
 #include "gltfModel.h"
 #include "_gltfLoader.h"
 #include <iostream>
 #include <vector>
 #include <cfloat>
 
-_Scene::_Scene()
+_Scene2::_Scene2()
 {
     myTime = new _timer();
     clickCount = 0;
@@ -20,9 +20,10 @@ _Scene::_Scene()
     myHitboxes = nullptr;
     myDeathOverlay = nullptr;
     myDeathOverlayText = nullptr;
+
 }
 
-_Scene::~_Scene()
+_Scene2::~_Scene2()
 {
     delete myTime;
     delete myLight;
@@ -37,7 +38,7 @@ _Scene::~_Scene()
     delete myDeathOverlayText;
 }
 
-void _Scene::reSizeScene(int width, int height)
+void _Scene2::reSizeScene(int width, int height)
 {
     float aspectRatio = (float)width / (float)height;
 
@@ -54,7 +55,7 @@ void _Scene::reSizeScene(int width, int height)
     this->height = height;
 }
 
-void _Scene::initGL()
+void _Scene2::initGL()
 {
     // ---- Standard OpenGL setup ----
     glShadeModel(GL_SMOOTH);
@@ -89,15 +90,15 @@ void _Scene::initGL()
 
     // ---- Skybox ----
     mySkyBox->skyBoxInit();
-    mySkyBox->tex[0] = mySkyBox->textures->loadTexture("images/back.png");
-    mySkyBox->tex[1] = mySkyBox->textures->loadTexture("images/front.png");
-    mySkyBox->tex[2] = mySkyBox->textures->loadTexture("images/top.png");
-    mySkyBox->tex[3] = mySkyBox->textures->loadTexture("images/bottom.png");
-    mySkyBox->tex[4] = mySkyBox->textures->loadTexture("images/right.png");
-    mySkyBox->tex[5] = mySkyBox->textures->loadTexture("images/left.png");
+    mySkyBox->tex[0] = mySkyBox->textures->loadTexture("images/back2.png");
+    mySkyBox->tex[1] = mySkyBox->textures->loadTexture("images/front2.png");
+    mySkyBox->tex[2] = mySkyBox->textures->loadTexture("images/top2.png");
+    mySkyBox->tex[3] = mySkyBox->textures->loadTexture("images/bottom2.png");
+    mySkyBox->tex[4] = mySkyBox->textures->loadTexture("images/right2.png");
+    mySkyBox->tex[5] = mySkyBox->textures->loadTexture("images/left2.png");
 
     // ---- UI textures ----
-    deathOverlayBG = myDeathOverlay->loadTexture("images/DeathBG.png");
+    deathOverlayBG = myDeathOverlay->loadTexture("images/DeathBG2.png");
     deathOverlayText = myDeathOverlayText->loadTexture("images/DeathText.png");
 
 
@@ -119,19 +120,19 @@ void _Scene::initGL()
 
 
     // ---- NEW MODEL LOADER ----
-    myNewModel.load("models/endPlatform.glb");
+    myNewModel.load("models/endPlatform2.glb");
     myNewModel.setActiveAnimation(0);
 
-    orb.load("models/Orb.glb");
+    orb.load("models/Orb2.glb");
     orb.setActiveAnimation(0);
 
-    levelPlatforms.load("models/levelplatforms.glb");
+    levelPlatforms.load("models/levelplatforms2.glb");
     levelPlatforms.setActiveAnimation(0);
 
-    spinPlatform.load("models/spinPlatform.glb");
+    spinPlatform.load("models/spinPlatform2.glb");
     spinPlatform.setActiveAnimation(0);
 
-    movePlatform.load("models/movePlatform.glb");
+    movePlatform.load("models/movePlatform2.glb");
     movePlatform.setActiveAnimation(0);
 
 
@@ -146,13 +147,9 @@ void _Scene::initGL()
     cutScene1->load("videos/cutscene1", "cutscene", 1, 85, 24.0f, VideoMode::STREAM);
     cutScene1->playOnce();
 
-    introCutscene->load("videos/introCutscene", "intro", 1, 100, 24.0f, VideoMode::STREAM);
-    introCutscene->playOnce();
-
-
 }
 
-void _Scene::updateScene()
+void _Scene2::updateScene()
 {
     myTime->updateDeltaTime();
 
@@ -198,8 +195,9 @@ void _Scene::updateScene()
 
 
 
-void _Scene::drawScene()
+void _Scene2::drawScene()
 {
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)width / (float)height;
@@ -223,9 +221,9 @@ void _Scene::drawScene()
     glEnable(GL_LIGHT0);
 
 
+
     // ---- Camera ----
     myCam->setUpCamera();
-
 
     // ---- Skybox ----
     glPushMatrix();
@@ -357,41 +355,6 @@ void _Scene::drawScene()
     }
 
 
-    // ---- Intro Cutscene ----
-    if (startLevel && !introCutscene->finished)
-    {
-        introCutscene->update(myTime->deltaTime);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
-
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, introCutscene->getCurrentTexture());
-        glColor4f(1,1,1,1);
-
-        glBegin(GL_QUADS);
-            glTexCoord2f(0, 1); glVertex2f(0, 0);
-            glTexCoord2f(1, 1); glVertex2f(windowWidth, 0);
-            glTexCoord2f(1, 0); glVertex2f(windowWidth, windowHeight);
-            glTexCoord2f(0, 0); glVertex2f(0, windowHeight);
-        glEnd();
-
-        glDisable(GL_TEXTURE_2D);
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glColor4f(1,1,1,1);
-    }
-
     // ---- Outro Cutscene ----
     if (levelComplete)
     {
@@ -445,8 +408,7 @@ void _Scene::drawScene()
 
 
 
-
-    if (deathOverlayActive && introCutscene->finished)
+    if (deathOverlayActive)
     {
         glDisable(GL_LIGHTING);
         glDisable(GL_DEPTH_TEST);
@@ -512,7 +474,7 @@ void _Scene::drawScene()
 
 }
 
-int _Scene::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+int _Scene2::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {

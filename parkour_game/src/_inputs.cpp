@@ -19,7 +19,7 @@ void _inputs::keyPressed(_camera* myCamera, float deltaTime)
 {
 
 
-    float moveSpeed = 40.0f * deltaTime;
+    float moveSpeed = 25.0f * deltaTime;
 
     // ---- Sprint ----
     if (keys[16])

@@ -21,9 +21,13 @@
 #include <_sounds.h>
 #include <_camera.h>
 #include <_videoLoader.h>
+#include <_Scene2.h>
+#include <_Scene3.h>
 
 _Scene *myScene = new _Scene();     //create scene class instance
 _mainMenu *myMenu = new _mainMenu();
+_Scene2 *myScene2 = new _Scene2();
+_Scene3 *myScene3 = new _Scene3();
 _sceneSwitcher* sceneSwitcher = new _sceneSwitcher();
 _timer myTimer;
 _sounds *menuSnds = new _sounds();
@@ -260,6 +264,12 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 	myMenu->initGL();
 	myMenu->reSizeScene(width, height);
 
+	myScene2->initGL();
+	myScene2->reSizeScene(width, height);
+
+    myScene3->initGL();
+	myScene3->reSizeScene(width, height);
+
 	//ShowCursor(FALSE);
 
 	return TRUE;							                // Success
@@ -314,6 +324,8 @@ LRESULT CALLBACK WndProc(
 			keys[wParam] = TRUE;	// If So, Mark It As TRUE
 			myScene->winMsg(hWnd, uMsg, wParam, lParam);                //main to scene
 			myMenu->winMsg(hWnd, uMsg, wParam, lParam);
+			myScene2->winMsg(hWnd, uMsg, wParam, lParam);
+			myScene3->winMsg(hWnd, uMsg, wParam, lParam);
 			return 0;			    // Jump Back
 		}
 
@@ -322,7 +334,8 @@ LRESULT CALLBACK WndProc(
 			keys[wParam] = FALSE;	// If So, Mark It As FALSE
 			myScene->winMsg(hWnd, uMsg, wParam, lParam);                //main to scene
 			myMenu->winMsg(hWnd, uMsg, wParam, lParam);
-
+            myScene2->winMsg(hWnd, uMsg, wParam, lParam);
+            myScene3->winMsg(hWnd, uMsg, wParam, lParam);
 			return 0;			    // Jump Back
 		}
 
@@ -331,7 +344,8 @@ LRESULT CALLBACK WndProc(
 		    //cout << "Resize ";      // Prints any time the window is resized
 		    myScene->reSizeScene(LOWORD(lParam), HIWORD(lParam));
 		    myMenu->reSizeScene(LOWORD(lParam), HIWORD(lParam));
-
+            myScene2->reSizeScene(LOWORD(lParam), HIWORD(lParam));
+            myScene2->reSizeScene(LOWORD(lParam), HIWORD(lParam));
                                     // LoWord=Width, HiWord=Height
 			return 0;			    // Jump Back
 		}
@@ -346,6 +360,8 @@ LRESULT CALLBACK WndProc(
         case WM_MOUSEWHEEL:
             myScene->winMsg(hWnd, uMsg, wParam, lParam);                //main to scene
             myMenu->winMsg(hWnd, uMsg, wParam, lParam);
+            myScene2->winMsg(hWnd, uMsg, wParam, lParam);
+            myScene3->winMsg(hWnd, uMsg, wParam, lParam);
             break;
 
 	}
@@ -429,6 +445,12 @@ int WINAPI WinMain(
 
 
                 if (sceneSwitcher->currentScene != previousScene) {
+                    introDelay = 0.0f;
+
+                    prevH = false;
+                    prevB = false;
+                    keys['Q'] = false;
+                    keys[VK_ESCAPE] = false;
 
                     if (sceneSwitcher->currentScene == SCENE_GAME) {
                         sceneSnds->eng->setSoundVolume(0.2f);
@@ -481,6 +503,78 @@ int WINAPI WinMain(
                         }
                         else {
                             myScene->fov = 60.0f;
+                        }
+
+                        if (myScene->cutScene1->finished)
+                            sceneSwitcher->currentScene = SCENE_LEVEL_TWO;
+
+                        break;
+
+
+                    case SCENE_LEVEL_TWO:
+
+                        myScene->snds->stopSounds();
+
+                        ShowCursor(FALSE);
+                        myScene2->updateScene();                   // update with delta time
+
+
+                        // Center the cursor
+
+                        center.x = fullscreenWidth / 2;
+                        center.y = fullscreenHeight / 2;
+                        SetCursorPos(center.x, center.y);
+
+                        // Update previous mouse positions to the center so next delta is relative
+                        myScene2->myInput->prev_MouseX = center.x;
+                        myScene2->myInput->prev_MouseY = center.y;
+
+
+                        myScene2->drawScene();                     // draw after update
+
+                        if (keys[VK_ESCAPE]) {
+                            menuSnds->playSound("sounds/button.wav");
+                            sceneSwitcher->currentScene = SCENE_MENU;
+                        }
+
+                        if (currentB && !prevB) {
+                            myScene2->showHitBoxes = !myScene2->showHitBoxes;
+                        }
+
+                        if (myScene2->cutScene1->finished)
+                            sceneSwitcher->currentScene = SCENE_LEVEL_THREE;
+
+
+                        break;
+
+                    case SCENE_LEVEL_THREE:
+
+                        myScene2->snds->stopSounds();
+
+                        ShowCursor(FALSE);
+                        myScene3->updateScene();                   // update with delta time
+
+
+                        // Center the cursor
+
+                        center.x = fullscreenWidth / 2;
+                        center.y = fullscreenHeight / 2;
+                        SetCursorPos(center.x, center.y);
+
+                        // Update previous mouse positions to the center so next delta is relative
+                        myScene3->myInput->prev_MouseX = center.x;
+                        myScene3->myInput->prev_MouseY = center.y;
+
+
+                        myScene3->drawScene();                     // draw after update
+
+                        if (keys[VK_ESCAPE]) {
+                            menuSnds->playSound("sounds/button.wav");
+                            sceneSwitcher->currentScene = SCENE_MENU;
+                        }
+
+                        if (currentB && !prevB) {
+                            myScene3->showHitBoxes = !myScene3->showHitBoxes;
                         }
 
                         break;
