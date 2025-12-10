@@ -8,7 +8,8 @@ enum SceneID {
     SCENE_MENU,
     SCENE_GAME,
     SCENE_LEVEL_TWO,
-    SCENE_LEVEL_THREE
+    SCENE_LEVEL_THREE,
+    PAUSE_MENU
 };
 
 

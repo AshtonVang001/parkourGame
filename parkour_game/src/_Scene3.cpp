@@ -108,7 +108,7 @@ void _Scene3::initGL()
 
     // ---- Sounds ----
     snds->initSounds();
-    snds->playSound("sounds/untitled.mp3");
+    //snds->playSound("sounds/untitled.mp3");
 
 
     // ---- Load GLTF Model ----

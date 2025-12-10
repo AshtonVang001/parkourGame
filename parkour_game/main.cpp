@@ -34,7 +34,7 @@ _sounds *menuSnds = new _sounds();
 _sounds *sceneSnds = new _sounds();
 _camera *myCamera = new _camera();
 
-int previousScene = -1;
+SceneID previousScene = SCENE_MENU;
 static float introDelay = 0.0f;
 
 using namespace std;
@@ -437,10 +437,15 @@ int WINAPI WinMain(
                 introDelay += myScene->myTime->deltaTime;
 
 
+                static bool isPaused = false;
                 static bool prevH = false;
                 static bool prevB = false;
+                static bool prevM   = false;
+                static bool prevEsc = false;
                 bool currentH = keys['H'];
                 bool currentB = keys['B'];
+                bool currentM   = keys['M'];
+                bool currEsc = keys[VK_ESCAPE];
 
 
 
@@ -465,6 +470,9 @@ int WINAPI WinMain(
                         sceneSnds->stopSounds();
                         sceneSnds->eng->setSoundVolume(0.4f);
                         sceneSnds->playMusic("sounds/gameMusic3.wav");   // play once on entering game
+                    }
+                    if(sceneSwitcher->currentScene == SCENE_MENU){
+                        myMenu->snds->playMusic("sounds/gameThemeForClass2.mp3");
                     }
 
                     previousScene = sceneSwitcher->currentScene; // update tracker
@@ -499,9 +507,13 @@ int WINAPI WinMain(
 
                         myScene->drawScene();                     // draw after update
 
-                        if (keys[VK_ESCAPE]) {
-                            menuSnds->playSound("sounds/button.wav");
-                            sceneSwitcher->currentScene = SCENE_MENU;
+                        // Pause handling
+                        if (keys[VK_ESCAPE] && !prevEsc)
+                        {
+                            sceneSnds->stopSounds();
+                            isPaused = true;
+                            previousScene = sceneSwitcher->currentScene;
+                            sceneSwitcher->currentScene = PAUSE_MENU;
                         }
 
                         if (currentB && !prevB) {
@@ -524,6 +536,7 @@ int WINAPI WinMain(
                     case SCENE_LEVEL_TWO:
 
                         myScene->snds->stopSounds();
+                        myMenu->snds->stopSounds();
 
                         ShowCursor(FALSE);
                         myScene2->updateScene();                   // update with delta time
@@ -542,9 +555,12 @@ int WINAPI WinMain(
 
                         myScene2->drawScene();                     // draw after update
 
-                        if (keys[VK_ESCAPE]) {
-                            menuSnds->playSound("sounds/button.wav");
-                            sceneSwitcher->currentScene = SCENE_MENU;
+                        if (keys[VK_ESCAPE] && !prevEsc)
+                        {
+                            sceneSnds->stopSounds();
+                            isPaused = true;
+                            previousScene = sceneSwitcher->currentScene;
+                            sceneSwitcher->currentScene = PAUSE_MENU;
                         }
 
                         if (currentB && !prevB) {
@@ -560,6 +576,7 @@ int WINAPI WinMain(
                     case SCENE_LEVEL_THREE:
 
                         myScene2->snds->stopSounds();
+                        myMenu->snds->stopSounds();
                         if (introDelay >= 1.0f && !myScene3->startLevel)
                         {
                             myScene3->startLevel = true;
@@ -583,9 +600,12 @@ int WINAPI WinMain(
 
                         myScene3->drawScene();                     // draw after update
 
-                        if (keys[VK_ESCAPE]) {
-                            menuSnds->playSound("sounds/button.wav");
-                            sceneSwitcher->currentScene = SCENE_MENU;
+                        if (keys[VK_ESCAPE] && !prevEsc)
+                        {
+                            sceneSnds->stopSounds();
+                            isPaused = true;
+                            previousScene = sceneSwitcher->currentScene;
+                            sceneSwitcher->currentScene = PAUSE_MENU;
                         }
 
                         if (currentB && !prevB) {
@@ -614,9 +634,54 @@ int WINAPI WinMain(
                             myMenu->helpOpen = !myMenu->helpOpen;
                         }
                         break;
-                }
+                    case PAUSE_MENU:
+                        // Draw semi-transparent overlay
+                        glDisable(GL_LIGHTING);
+                        glDisable(GL_DEPTH_TEST);
+                        glEnable(GL_BLEND);
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+                        glMatrixMode(GL_PROJECTION);
+                        glPushMatrix();
+                        glLoadIdentity();
+                        glOrtho(0, fullscreenWidth / 2, 0, fullscreenHeight / 2, -1, 1);
+
+                        glMatrixMode(GL_MODELVIEW);
+                        glPushMatrix();
+                        glLoadIdentity();
+
+                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                        glBegin(GL_QUADS);
+                            glVertex2f(0, 0);
+                            glVertex2f(fullscreenWidth/2, 0);
+                            glVertex2f(fullscreenWidth/2, fullscreenHeight/2);
+                            glVertex2f(0, fullscreenHeight/2);
+                        glEnd();
+
+                        glMatrixMode(GL_PROJECTION);
+                        glPopMatrix();
+                        glMatrixMode(GL_MODELVIEW);
+                        glPopMatrix();
+
+                        // Input handling for pause menu
+                        if (keys['M'] && !prevM) // example: M returns to main menu
+                        {
+                            menuSnds->playSound("sounds/button.wav");
+                            sceneSwitcher->currentScene = SCENE_MENU;
+                            isPaused = false;
+                        }
+
+                        if (currEsc && !prevEsc) // resume game
+                        {
+                            sceneSwitcher->currentScene = previousScene;
+                            isPaused = false;
+                        }
+                        break;
+                    }
                 prevH = currentH;
                 prevB = currentB;
+                prevEsc = currEsc;
+
 
 				SwapBuffers(hDC);	    // Swap Buffers (Double Buffering)
 			}

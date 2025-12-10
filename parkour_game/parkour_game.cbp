@@ -52,6 +52,7 @@
 		<Unit filename="include/_3DModelLoader.h" />
 		<Unit filename="include/_Scene.h" />
 		<Unit filename="include/_Scene2.h" />
+		<Unit filename="include/_Scene3.h" />
 		<Unit filename="include/_bullets.h" />
 		<Unit filename="include/_camera.h" />
 		<Unit filename="include/_collisionCheck.h" />
@@ -78,6 +79,7 @@
 		<Unit filename="src/_3DModelLoader.cpp" />
 		<Unit filename="src/_Scene.cpp" />
 		<Unit filename="src/_Scene2.cpp" />
+		<Unit filename="src/_Scene3.cpp" />
 		<Unit filename="src/_bullets.cpp" />
 		<Unit filename="src/_camera.cpp" />
 		<Unit filename="src/_collisionCheck.cpp" />
