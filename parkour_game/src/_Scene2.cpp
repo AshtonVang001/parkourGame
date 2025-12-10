@@ -144,7 +144,7 @@ void _Scene2::initGL()
 
 
     // ---- Video Loader ----
-    cutScene1->load("videos/cutscene1", "cutscene", 1, 85, 24.0f, VideoMode::STREAM);
+    cutScene1->load("videos/cutscene2", "cutscene", 1, 85, 24.0f, VideoMode::STREAM);
     cutScene1->playOnce();
 
 }

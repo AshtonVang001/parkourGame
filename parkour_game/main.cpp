@@ -456,6 +456,16 @@ int WINAPI WinMain(
                         sceneSnds->eng->setSoundVolume(0.2f);
                         sceneSnds->playMusic("sounds/gameMusic.wav");   // play once on entering game
                     }
+                    if (sceneSwitcher->currentScene == SCENE_LEVEL_TWO) {
+                        sceneSnds->stopSounds();
+                        sceneSnds->eng->setSoundVolume(0.2f);
+                        sceneSnds->playMusic("sounds/gameMusic2.wav");   // play once on entering game
+                    }
+                    if (sceneSwitcher->currentScene == SCENE_LEVEL_THREE) {
+                        sceneSnds->stopSounds();
+                        sceneSnds->eng->setSoundVolume(0.4f);
+                        sceneSnds->playMusic("sounds/gameMusic3.wav");   // play once on entering game
+                    }
 
                     previousScene = sceneSwitcher->currentScene; // update tracker
                 }
@@ -550,6 +560,11 @@ int WINAPI WinMain(
                     case SCENE_LEVEL_THREE:
 
                         myScene2->snds->stopSounds();
+                        if (introDelay >= 1.0f && !myScene3->startLevel)
+                        {
+                            myScene3->startLevel = true;
+                            introDelay = 0.0f; // reset if you want
+                        }
 
                         ShowCursor(FALSE);
                         myScene3->updateScene();                   // update with delta time

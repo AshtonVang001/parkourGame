@@ -144,8 +144,11 @@ void _Scene3::initGL()
 
 
     // ---- Video Loader ----
-    cutScene1->load("videos/cutscene1", "cutscene", 1, 85, 24.0f, VideoMode::STREAM);
+    cutScene1->load("videos/cutscene3", "cutscene", 1, 175, 24.0f, VideoMode::STREAM);
     cutScene1->playOnce();
+
+    introCutscene->load("videos/finalIntro", "finalIntro", 1, 100, 24.0f, VideoMode::STREAM);
+    introCutscene->playOnce();
 
 }
 
@@ -355,6 +358,42 @@ void _Scene3::drawScene()
     }
 
 
+    // ---- Intro Cutscene ----
+    if (startLevel && !introCutscene->finished)
+    {
+        introCutscene->update(myTime->deltaTime);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, introCutscene->getCurrentTexture());
+        glColor4f(1,1,1,1);
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(0, 0);
+            glTexCoord2f(1, 1); glVertex2f(windowWidth, 0);
+            glTexCoord2f(1, 0); glVertex2f(windowWidth, windowHeight);
+            glTexCoord2f(0, 0); glVertex2f(0, windowHeight);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
+        glColor4f(1,1,1,1);
+    }
+
+
     // ---- Outro Cutscene ----
     if (levelComplete)
     {
@@ -408,7 +447,7 @@ void _Scene3::drawScene()
 
 
 
-    if (deathOverlayActive)
+    if (deathOverlayActive && introCutscene->finished)
     {
         glDisable(GL_LIGHTING);
         glDisable(GL_DEPTH_TEST);
