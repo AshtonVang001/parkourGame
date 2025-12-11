@@ -129,6 +129,9 @@ void _Scene2::initGL()
     levelPlatforms.load("models/newLevelplatforms2.glb");
     levelPlatforms.setActiveAnimation(0);
 
+    rings.load("models/rings.glb");
+    rings.setActiveAnimation(0);
+
 
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
 
@@ -296,11 +299,11 @@ void _Scene2::drawScene()
     GLint vp[4]; glGetIntegerv(GL_VIEWPORT, vp);
 
 
-    spinPlatform.update(myTime->deltaTime);
-    movePlatform.update(myTime->deltaTime);
+    rings.update(myTime->deltaTime);
     orb.update(myTime->deltaTime);
 
-    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,-9,-440));
+
+    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,-9,-595));
     modelMatrix = glm::scale(modelMatrix, glm::vec3(7));
     glm::mat4 viewMatrix = myCam->getViewMatrix();
     glm::mat4 projMatrix = myCam->getProjectionMatrix((float)width / height);
@@ -316,11 +319,12 @@ void _Scene2::drawScene()
     if (!levelComplete) {
         myNewModel.draw();
         levelPlatforms.draw();
+        rings.draw();
     }
 
     glm::mat4 orbModelMatrix = glm::mat4(1.0f);
 
-    orbModelMatrix = glm::translate(orbModelMatrix, glm::vec3(0, -12, -440));
+    orbModelMatrix = glm::translate(orbModelMatrix, glm::vec3(0, -12, -595));
     orbModelMatrix = glm::scale(orbModelMatrix, glm::vec3(7.0f));
     glUniformMatrix4fv(gltfShader->getUniform("uModel"), 1, GL_FALSE, glm::value_ptr(orbModelMatrix));
 
@@ -344,7 +348,7 @@ void _Scene2::drawScene()
 
 
     // ---- Video Loader ----
-    if (fabs(myCam->eye.z + 440.0f) < 2 && fabs(myCam->eye.x + 0) < 2 && fabs(myCam->eye.y + 0) < 4) {
+    if (fabs(myCam->eye.z + 595.0f) < 2 && fabs(myCam->eye.x + 0) < 2 && fabs(myCam->eye.y + 0) < 4) {
         levelComplete = true;
         //cout << "Level Complete!" << endl;
     }

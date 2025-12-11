@@ -113,27 +113,27 @@ void _Scene3::initGL()
 
     // ---- Load GLTF Model ----
     myGltfModel2 = loader.loadModel("models/catSkull.glb");
+    myGltfModel  = loader.loadModel("models/catSkull.glb");
 
 
     // ---- Load Model Texture ----
     GLuint texID3 = testTexture->loadTexture("images/bone2.jpg");
+    GLuint texID2 = testTexture->loadTexture("images/dark.png");
 
 
     // ---- NEW MODEL LOADER ----
-    myNewModel.load("models/endPlatform.glb");
+    myNewModel.load("models/endPlatform3.glb");
     myNewModel.setActiveAnimation(0);
 
     orb.load("models/Orb.glb");
     orb.setActiveAnimation(0);
 
-    levelPlatforms.load("models/levelplatforms.glb");
+    levelPlatforms.load("models/newLevelplatforms3.glb");
     levelPlatforms.setActiveAnimation(0);
 
-    spinPlatform.load("models/spinPlatform.glb");
-    spinPlatform.setActiveAnimation(0);
+    spikes.load("models/spikes.glb");
+    spikes.setActiveAnimation(0);
 
-    movePlatform.load("models/movePlatform.glb");
-    movePlatform.setActiveAnimation(0);
 
 
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
@@ -141,6 +141,7 @@ void _Scene3::initGL()
 
     // ---- Bind Model Texture ----
     myGltfModel2->textureID = texID3;   //skull
+    myGltfModel->textureID  = texID2;   //skull
 
 
     // ---- Video Loader ----
@@ -149,6 +150,8 @@ void _Scene3::initGL()
 
     introCutscene->load("videos/finalIntro", "finalIntro", 1, 100, 24.0f, VideoMode::STREAM);
     introCutscene->playOnce();
+
+    winTexture = myTexture->loadTexture("images/winScreen.png");
 
 }
 
@@ -190,6 +193,51 @@ void _Scene3::updateScene()
             deathOverlayActive = false;
             deathTimer = 0;
             deathScale = 1.2f;
+        }
+    }
+
+
+
+    // ---- Lasers ----
+
+    float px = myCam->eye.x;
+    float py = myCam->eye.y;
+    float pz = myCam->eye.z;
+
+    laserTimer += myTime->deltaTime;
+
+    if (introCutscene->finished && !myCam->died) {
+        if (laserTimer >= laserCooldown)
+        {
+            shootLaser();
+            laserTimer = 0.0f;   // reset
+        }
+    }
+
+    for (auto& L : lasers)
+    {
+        if (!L.alive) continue;
+
+        // Move the laser forward
+        L.x += L.dx * L.speed * myTime->deltaTime;
+        L.y += L.dy * L.speed * myTime->deltaTime;
+        L.z += L.dz * L.speed * myTime->deltaTime;
+
+        float pull = -L.x * L.curveStrength * myTime->deltaTime;
+        L.x += pull;
+
+        // --- Simple Collision Check ---
+        float dx = L.x - px;
+        float dy = L.y - py;
+        float dz = L.z - pz;
+        float dist2 = dx*dx + dy*dy + dz*dz;
+
+        float hitRange = 1.5f;
+        if (dist2 < hitRange * hitRange)
+        {
+            L.alive = false;
+            myCam->died = true;
+            break;
         }
     }
 
@@ -257,7 +305,7 @@ void _Scene3::drawScene()
 
     glPushMatrix();
         glTranslatef(skull1X, 7 + yOffset, skull1Z);
-        glRotatef(angleY1, 0, 1, 0); // <-- makes it look at player
+        glRotatef(angleY1, 0, 1, 0);
         glRotatef(30, 1, 0, 0);
         glScalef(2.5, 2.5, 2.5);
         glColor3f(1,1,1);
@@ -283,6 +331,16 @@ void _Scene3::drawScene()
     glPopMatrix();
 
 
+    if (!levelComplete) {
+        glPushMatrix();
+            glTranslatef(0, 9 - yOffset * 2, -595);
+            glRotatef(0, 0, 1, 0);
+            glRotatef(30, 1, 0, 0);
+            glScalef(7, 7, 7);
+            glColor3f(1,1,1);
+            myGltfModel->draw();
+        glPopMatrix();
+    }
 
 
 
@@ -302,11 +360,7 @@ void _Scene3::drawScene()
     GLint vp[4]; glGetIntegerv(GL_VIEWPORT, vp);
 
 
-    spinPlatform.update(myTime->deltaTime);
-    movePlatform.update(myTime->deltaTime);
-    orb.update(myTime->deltaTime);
-
-    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,-9,-440));
+    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0,-9,-595));
     modelMatrix = glm::scale(modelMatrix, glm::vec3(7));
     glm::mat4 viewMatrix = myCam->getViewMatrix();
     glm::mat4 projMatrix = myCam->getProjectionMatrix((float)width / height);
@@ -322,18 +376,8 @@ void _Scene3::drawScene()
     if (!levelComplete) {
         myNewModel.draw();
         levelPlatforms.draw();
-        spinPlatform.draw();
-        movePlatform.draw();
+        spikes.draw();
     }
-
-    glm::mat4 orbModelMatrix = glm::mat4(1.0f);
-
-    orbModelMatrix = glm::translate(orbModelMatrix, glm::vec3(0, -12, -440));
-    orbModelMatrix = glm::scale(orbModelMatrix, glm::vec3(7.0f));
-    glUniformMatrix4fv(gltfShader->getUniform("uModel"), 1, GL_FALSE, glm::value_ptr(orbModelMatrix));
-
-    if (!levelComplete)
-        orb.draw();
 
 
     glUseProgram(currentProgram);
@@ -350,101 +394,26 @@ void _Scene3::drawScene()
 
 
 
-
-    // ---- Video Loader ----
-    if (fabs(myCam->eye.z + 440.0f) < 2 && fabs(myCam->eye.x + 0) < 2 && fabs(myCam->eye.y + 0) < 4) {
-        levelComplete = true;
-        //cout << "Level Complete!" << endl;
-    }
-
-
-    // ---- Intro Cutscene ----
-    if (startLevel && !introCutscene->finished)
+    // ---- Lasers ----
+    for (auto& L : lasers)
     {
-        introCutscene->update(myTime->deltaTime);
-
-        glMatrixMode(GL_PROJECTION);
+        if (!L.alive && !levelComplete) continue;
+        glPushAttrib(GL_CURRENT_BIT);
         glPushMatrix();
-        glLoadIdentity();
-        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
+        glTranslatef(L.x, L.y, L.z);
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
+        float yaw   = atan2(L.dx, L.dz) * 180.0f / M_PI;
+        float pitch = -atan2(L.dy, sqrt(L.dx*L.dx + L.dz*L.dz)) * 180.0f / M_PI;
 
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, introCutscene->getCurrentTexture());
-        glColor4f(1,1,1,1);
+        glRotatef(yaw,   0, 1, 0);
+        glRotatef(pitch, 1, 0, 0);
 
-        glBegin(GL_QUADS);
-            glTexCoord2f(0, 1); glVertex2f(0, 0);
-            glTexCoord2f(1, 1); glVertex2f(windowWidth, 0);
-            glTexCoord2f(1, 0); glVertex2f(windowWidth, windowHeight);
-            glTexCoord2f(0, 0); glVertex2f(0, windowHeight);
-        glEnd();
-
-        glDisable(GL_TEXTURE_2D);
-
-        glMatrixMode(GL_PROJECTION);
+        glScalef(0.2f, 0.2f, 2.0f);
+        glColor3f(1, 1, 1);
+        glutSolidCube(2);  // placeholder for a laser
         glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glColor4f(1,1,1,1);
+        glPopAttrib();
     }
-
-
-    // ---- Outro Cutscene ----
-    if (levelComplete)
-    {
-        cutScene1->update(myTime->deltaTime);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, cutScene1->getCurrentTexture());
-        glColor4f(1, 1, 1, 1);
-
-        glBegin(GL_QUADS);
-
-            glTexCoord2f(0, 1);   // was (0,0)
-            glVertex2f(0, 0);
-
-            glTexCoord2f(1, 1);   // was (1,0)
-            glVertex2f(windowWidth, 0);
-
-            glTexCoord2f(1, 0);   // was (1,1)
-            glVertex2f(windowWidth, windowHeight);
-
-            glTexCoord2f(0, 0);   // was (0,1)
-            glVertex2f(0, windowHeight);
-
-        glEnd();
-
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glColor4f(1,1,1,1);
-    }
-
-
-    // ---- hitboxes ----
-    myHitboxes->drawHitboxes();
-    if (showHitBoxes)
-        myHitboxes->debugBoxes();
-
 
 
     if (deathOverlayActive && introCutscene->finished)
@@ -511,6 +480,141 @@ void _Scene3::drawScene()
         glPopMatrix();
     }
 
+
+
+
+
+    // ---- Video Loader ----
+    if (!myCam->died && fabs(myCam->eye.z + 595.0f) < 10 && fabs(myCam->eye.x + 0) < 10 && fabs(myCam->eye.y + 0) < 10) {
+        levelComplete = true;
+        //cout << "Level Complete!" << endl;
+    }
+
+
+    // ---- Intro Cutscene ----
+    if (startLevel && !introCutscene->finished)
+    {
+        introCutscene->update(myTime->deltaTime);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, introCutscene->getCurrentTexture());
+        glColor4f(1,1,1,1);
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(0, 0);
+            glTexCoord2f(1, 1); glVertex2f(windowWidth, 0);
+            glTexCoord2f(1, 0); glVertex2f(windowWidth, windowHeight);
+            glTexCoord2f(0, 0); glVertex2f(0, windowHeight);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
+        glColor4f(1,1,1,1);
+    }
+
+
+    // ---- Outro Cutscene ----
+    if (levelComplete && !cutScene1->finished)
+    {
+        cutScene1->update(myTime->deltaTime);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, cutScene1->getCurrentTexture());
+        glColor4f(1, 1, 1, 1);
+
+        glBegin(GL_QUADS);
+
+            glTexCoord2f(0, 1);   // was (0,0)
+            glVertex2f(0, 0);
+
+            glTexCoord2f(1, 1);   // was (1,0)
+            glVertex2f(windowWidth, 0);
+
+            glTexCoord2f(1, 0);   // was (1,1)
+            glVertex2f(windowWidth, windowHeight);
+
+            glTexCoord2f(0, 0);   // was (0,1)
+            glVertex2f(0, windowHeight);
+
+        glEnd();
+
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
+        glColor4f(1,1,1,1);
+    }
+
+
+    // ---- hitboxes ----
+    myHitboxes->drawHitboxes();
+    if (showHitBoxes)
+        myHitboxes->debugBoxes();
+
+
+    // ---- Show Win Screen ----
+    if (cutScene1->finished && !winShown)
+    {
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, windowWidth, 0, windowHeight, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, winTexture);
+        glColor4f(1, 1, 1, 1);
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(0, 0);
+            glTexCoord2f(1, 1); glVertex2f(windowWidth, 0);
+            glTexCoord2f(1, 0); glVertex2f(windowWidth, windowHeight);
+            glTexCoord2f(0, 0); glVertex2f(0, windowHeight);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
+
 }
 
 int _Scene3::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -535,3 +639,41 @@ int _Scene3::winMsg(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
+
+
+void _Scene3::shootLaser() {
+    spawnLaserOffset(+3.0f, -2.5f);  // Right laser
+    spawnLaserOffset(-3.0f, -2.5f);  // Left laser
+}
+
+void _Scene3::spawnLaserOffset(float xOff, float yOff)
+{
+    Laser L;
+
+    L.x = xOff;
+    L.y = (9 - yOffset * 2) + yOff;
+    L.z = -595;
+
+    // Target: the player
+    float px = myCam->eye.x;
+    float py = myCam->eye.y;
+    float pz = myCam->eye.z;
+
+    // --- Compute direction normally ---
+    L.dx = px - L.x;
+    L.dy = py - L.y;
+    L.dz = pz - L.z;
+
+    float len = sqrt(L.dx*L.dx + L.dy*L.dy + L.dz*L.dz);
+    L.dx /= len;
+    L.dy /= len;
+    L.dz /= len;
+
+    L.speed = 350.0f;
+    L.alive = true;
+
+    L.curveStrength = 0.5f; // NEW (see below)
+
+    lasers.push_back(L);
+}
+

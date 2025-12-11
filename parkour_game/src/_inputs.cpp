@@ -9,7 +9,7 @@ _inputs::_inputs()
     prev_MouseX = 0.0;
     prev_MouseY = 0.0;
 
-    //hitboxSystem.populateHitboxes();
+    hitboxSystem.populateHitboxes();
 }
 
 _inputs::~_inputs()

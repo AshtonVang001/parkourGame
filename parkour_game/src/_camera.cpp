@@ -181,7 +181,6 @@ void _camera::updateVertical(float deltaTime, _hitboxes* hitboxes)
 
 
 
-
 float _camera::lerp(float a, float b, float t)
 {
     return a + (b - a) * t;

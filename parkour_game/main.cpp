@@ -73,10 +73,10 @@ void drawPauseOverlay(int fullscreenWidth, int fullscreenHeight, _textureLoader 
 
     glColor4f(1.0f, 1.0f, 1.0f, 0.3f);
     glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(0, 0);
-        glTexCoord2f(1, 0); glVertex2f(fullscreenWidth/2, 0);
-        glTexCoord2f(1, 1); glVertex2f(fullscreenWidth/2, fullscreenHeight/2);
-        glTexCoord2f(0, 1); glVertex2f(0, fullscreenHeight/2);
+        glTexCoord2f(0, 1); glVertex2f(0, 0);
+        glTexCoord2f(1, 1); glVertex2f(fullscreenWidth/2, 0);
+        glTexCoord2f(1, 0); glVertex2f(fullscreenWidth/2, fullscreenHeight/2);
+        glTexCoord2f(0, 0); glVertex2f(0, fullscreenHeight/2);
     glEnd();
 
     glMatrixMode(GL_PROJECTION);
@@ -439,7 +439,7 @@ int WINAPI WinMain(
 		return 0;				        // Quit If Window Was Not Created
 	}
 
-    pauseTex->loadTexture("images/helpMenu.png");
+    pauseTex->loadTexture("images/pauseScreen.png");
 
 	while(!done)					    // Loop That Runs While done=FALSE
 	{
@@ -524,8 +524,6 @@ int WINAPI WinMain(
                             introDelay = 0.0f;
                         }
 
-                        myScene->myInput->hitboxSystem.populateHitboxes();
-
                         ShowCursor(FALSE);
                         myScene->updateScene();
 
@@ -554,6 +552,7 @@ int WINAPI WinMain(
                             myScene->fov = 60.0f;
                         }
 
+
                         if (myScene->cutScene1->finished) sceneSwitcher->currentScene = SCENE_LEVEL_TWO;
 
                         } else { // PAUSED
@@ -575,8 +574,6 @@ int WINAPI WinMain(
 
                 case SCENE_LEVEL_TWO:
                     if (!isPaused) {
-
-                        myScene2->myInput->hitboxSystem.populateHitboxes();
 
                         myScene->snds->stopSounds();
                         myMenu->snds->stopSounds();

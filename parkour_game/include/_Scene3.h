@@ -23,6 +23,15 @@
 #include <_hitboxes.h>
 
 
+struct Laser {
+    float x, y, z;
+    float dx, dy, dz;    // direction
+    float speed;
+    bool alive;
+    float curveStrength;
+};
+
+
 class _Scene3
 {
 public:
@@ -86,6 +95,9 @@ public:
     _textureLoader *myDeathOverlayText;
     GLuint deathOverlayBG;
     GLuint deathOverlayText;
+    GLuint winTexture;
+
+    bool winShown;
 
     VideoLoader *testVideo = new VideoLoader();
     VideoLoader *cutScene1 = new VideoLoader();
@@ -94,12 +106,12 @@ public:
     GLTFModel myNewModel;
     GLTFModel orb;
     GLTFModel levelPlatforms;
-    GLTFModel spinPlatform;
+    GLTFModel spikes;
     GLTFModel movePlatform;
 
     std::vector<GLTFModel*> platforms = {
     &levelPlatforms,
-    &spinPlatform,
+    &spikes,
     &movePlatform
     };
 
@@ -110,10 +122,20 @@ public:
     // ---- load models (OLD) ----
     _gltfLoader loader;
     GltfModel* myGltfModel2;
+    GltfModel* myGltfModel;
 
 
     // ---- load model texture ----
     _textureLoader *testTexture = new _textureLoader();
+
+    // ---- laser ----
+    float laserTimer = 0.0f;
+    float laserCooldown = 2.0f;   // 1 second between shots
+    void shootLaser();
+    void spawnLaserOffset(float xOff, float yOff);
+    std::vector<Laser> lasers;
+
+
 
 
 protected:

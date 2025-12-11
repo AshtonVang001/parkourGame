@@ -94,13 +94,11 @@ public:
     GLTFModel myNewModel;
     GLTFModel orb;
     GLTFModel levelPlatforms;
-    GLTFModel spinPlatform;
+    GLTFModel rings;
     GLTFModel movePlatform;
 
     std::vector<GLTFModel*> platforms = {
     &levelPlatforms,
-    &spinPlatform,
-    &movePlatform
     };
 
     Shader* gltfShader = nullptr;
