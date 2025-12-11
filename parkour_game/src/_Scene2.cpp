@@ -126,14 +126,8 @@ void _Scene2::initGL()
     orb.load("models/Orb2.glb");
     orb.setActiveAnimation(0);
 
-    levelPlatforms.load("models/levelplatforms2.glb");
+    levelPlatforms.load("models/newLevelplatforms2.glb");
     levelPlatforms.setActiveAnimation(0);
-
-    spinPlatform.load("models/spinPlatform2.glb");
-    spinPlatform.setActiveAnimation(0);
-
-    movePlatform.load("models/movePlatform2.glb");
-    movePlatform.setActiveAnimation(0);
 
 
     gltfShader = new Shader("shaders/gltf_skin.vert", "shaders/gltf_skin.frag");
@@ -189,6 +183,7 @@ void _Scene2::updateScene()
             deathScale = 1.2f;
         }
     }
+
 
 
 }
@@ -281,6 +276,8 @@ void _Scene2::drawScene()
 
 
 
+    cout << myCam->eye.z << endl;
+
 
 
 
@@ -319,8 +316,6 @@ void _Scene2::drawScene()
     if (!levelComplete) {
         myNewModel.draw();
         levelPlatforms.draw();
-        spinPlatform.draw();
-        movePlatform.draw();
     }
 
     glm::mat4 orbModelMatrix = glm::mat4(1.0f);

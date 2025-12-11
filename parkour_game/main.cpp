@@ -524,6 +524,8 @@ int WINAPI WinMain(
                             introDelay = 0.0f;
                         }
 
+                        myScene->myInput->hitboxSystem.populateHitboxes();
+
                         ShowCursor(FALSE);
                         myScene->updateScene();
 
@@ -573,6 +575,9 @@ int WINAPI WinMain(
 
                 case SCENE_LEVEL_TWO:
                     if (!isPaused) {
+
+                        myScene2->myInput->hitboxSystem.populateHitboxes();
+
                         myScene->snds->stopSounds();
                         myMenu->snds->stopSounds();
 

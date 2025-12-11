@@ -7,7 +7,7 @@ _inputs::_inputs()
     isTranslationActive = false;
     //isScalingActive = false;
 
-    hitboxSystem.populateHitboxes();
+    //hitboxSystem.populateHitboxes();
 }
 
 _inputs::~_inputs()
