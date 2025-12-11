@@ -6,6 +6,8 @@ _inputs::_inputs()
     isRotationActive = false;
     isTranslationActive = false;
     //isScalingActive = false;
+    prev_MouseX = 0.0;
+    prev_MouseY = 0.0;
 
     //hitboxSystem.populateHitboxes();
 }

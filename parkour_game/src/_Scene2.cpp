@@ -276,7 +276,7 @@ void _Scene2::drawScene()
 
 
 
-    cout << myCam->eye.z << endl;
+    //cout << myCam->eye.z << endl;
 
 
 
