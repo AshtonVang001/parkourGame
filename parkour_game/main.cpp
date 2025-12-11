@@ -33,8 +33,11 @@ _timer myTimer;
 _sounds *menuSnds = new _sounds();
 _sounds *sceneSnds = new _sounds();
 _camera *myCamera = new _camera();
+_textureLoader *pauseTex = new _textureLoader();
 
-SceneID previousScene = SCENE_MENU;
+
+
+SceneID previousScene;
 static float introDelay = 0.0f;
 
 using namespace std;
@@ -50,6 +53,37 @@ bool	fullscreen=TRUE;// Fullscreen Flag Set To Fullscreen Mode By Default
 
 LRESULT	CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);	// Declaration For WndProc
 
+void drawPauseOverlay(int fullscreenWidth, int fullscreenHeight, _textureLoader * pauseTex) {
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_TEXTURE_2D);
+    pauseTex->bindTexture();
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0, fullscreenWidth / 2, 0, fullscreenHeight / 2, -1, 1);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glColor4f(1.0f, 1.0f, 1.0f, 0.3f);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0, 0);
+        glTexCoord2f(1, 0); glVertex2f(fullscreenWidth/2, 0);
+        glTexCoord2f(1, 1); glVertex2f(fullscreenWidth/2, fullscreenHeight/2);
+        glTexCoord2f(0, 1); glVertex2f(0, fullscreenHeight/2);
+    glEnd();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //										THE KILL GL WINDOW
@@ -405,6 +439,7 @@ int WINAPI WinMain(
 		return 0;				        // Quit If Window Was Not Created
 	}
 
+    pauseTex->loadTexture("images/helpMenu.png");
 
 	while(!done)					    // Loop That Runs While done=FALSE
 	{
@@ -449,238 +484,210 @@ int WINAPI WinMain(
 
 
 
-                if (sceneSwitcher->currentScene != previousScene) {
+            if (sceneSwitcher->currentScene != previousScene) {
                     introDelay = 0.0f;
 
                     prevH = false;
                     prevB = false;
+                    prevEsc = false;
                     keys['Q'] = false;
                     keys[VK_ESCAPE] = false;
 
-                    if (sceneSwitcher->currentScene == SCENE_GAME) {
-                        sceneSnds->eng->setSoundVolume(0.2f);
-                        sceneSnds->playMusic("sounds/gameMusic.wav");   // play once on entering game
-                    }
-                    if (sceneSwitcher->currentScene == SCENE_LEVEL_TWO) {
-                        sceneSnds->stopSounds();
-                        sceneSnds->eng->setSoundVolume(0.2f);
-                        sceneSnds->playMusic("sounds/gameMusic2.wav");   // play once on entering game
-                    }
-                    if (sceneSwitcher->currentScene == SCENE_LEVEL_THREE) {
-                        sceneSnds->stopSounds();
-                        sceneSnds->eng->setSoundVolume(0.4f);
-                        sceneSnds->playMusic("sounds/gameMusic3.wav");   // play once on entering game
-                    }
-                    if(sceneSwitcher->currentScene == SCENE_MENU){
-                        myMenu->snds->playMusic("sounds/gameThemeForClass2.mp3");
-                    }
-
-                    previousScene = sceneSwitcher->currentScene; // update tracker
+                if (sceneSwitcher->currentScene == SCENE_GAME) {
+                    sceneSnds->eng->setSoundVolume(0.2f);
+                    sceneSnds->playMusic("sounds/gameMusic.wav");   // play once on entering game
+                }
+                if (sceneSwitcher->currentScene == SCENE_LEVEL_TWO) {
+                    sceneSnds->stopSounds();
+                    sceneSnds->eng->setSoundVolume(0.2f);
+                    sceneSnds->playMusic("sounds/gameMusic2.wav");   // play once on entering game
+                }
+                if (sceneSwitcher->currentScene == SCENE_LEVEL_THREE) {
+                    sceneSnds->stopSounds();
+                    sceneSnds->eng->setSoundVolume(0.4f);
+                    sceneSnds->playMusic("sounds/gameMusic3.wav");   // play once on entering game
+                }
+                if(sceneSwitcher->currentScene == SCENE_MENU){
+                    myMenu->snds->playMusic("sounds/gameThemeForClass2.mp3");
                 }
 
+                    previousScene = sceneSwitcher->currentScene; // update tracker
+            }
+                        // Main scene switch
+            switch (sceneSwitcher->currentScene) {
 
-                switch (sceneSwitcher->currentScene)
-                {
-                    case SCENE_GAME:
-
+                case SCENE_GAME:
+                    if (!isPaused) {
                         myMenu->snds->stopSounds();
-                        if (introDelay >= 1.0f && !myScene->startLevel)
-                        {
+                        if (introDelay >= 1.0f && !myScene->startLevel) {
                             myScene->startLevel = true;
-                            introDelay = 0.0f; // reset if you want
+                            introDelay = 0.0f;
                         }
 
                         ShowCursor(FALSE);
-                        myScene->updateScene();                   // update with delta time
-
+                        myScene->updateScene();
 
                         // Center the cursor
-
                         center.x = fullscreenWidth / 2;
                         center.y = fullscreenHeight / 2;
                         SetCursorPos(center.x, center.y);
 
-                        // Update previous mouse positions to the center so next delta is relative
                         myScene->myInput->prev_MouseX = center.x;
                         myScene->myInput->prev_MouseY = center.y;
 
+                        myScene->drawScene();
 
-                        myScene->drawScene();                     // draw after update
-
-                        // Pause handling
-                        if (keys[VK_ESCAPE] && !prevEsc)
-                        {
+                        if (keys[VK_ESCAPE] && !prevEsc) {
                             sceneSnds->stopSounds();
                             isPaused = true;
-                            previousScene = sceneSwitcher->currentScene;
-                            sceneSwitcher->currentScene = PAUSE_MENU;
+                            previousScene = SCENE_GAME;
                         }
 
-                        if (currentB && !prevB) {
-                            myScene->showHitBoxes = !myScene->showHitBoxes;
-                        }
+                        if (currentB && !prevB) myScene->showHitBoxes = !myScene->showHitBoxes;
+
                         if (keys[VK_SHIFT]) {
                             myScene->fov = 65.0f;
                             myCamera->fov = 65.0f;
-                        }
-                        else {
+                        } else {
                             myScene->fov = 60.0f;
                         }
 
-                        if (myScene->cutScene1->finished)
-                            sceneSwitcher->currentScene = SCENE_LEVEL_TWO;
+                        if (myScene->cutScene1->finished) sceneSwitcher->currentScene = SCENE_LEVEL_TWO;
 
-                        break;
+                        } else { // PAUSED
+                            drawPauseOverlay(fullscreenWidth, fullscreenHeight, pauseTex);
 
+                            if (keys['M'] && !prevM) {
+                                menuSnds->playSound("sounds/button.wav");
+                                sceneSwitcher->currentScene = SCENE_MENU;
+                                isPaused = false;
+                            }
 
-                    case SCENE_LEVEL_TWO:
+                            if (keys[VK_ESCAPE] && !prevEsc) {
+                                sceneSnds->eng->setSoundVolume(0.2f);
+                                sceneSnds->playMusic("sounds/gameMusic.wav");   // play once on entering game
+                                isPaused = false; // resume game
+                            }
+                        }
+                    break;
 
+                case SCENE_LEVEL_TWO:
+                    if (!isPaused) {
                         myScene->snds->stopSounds();
                         myMenu->snds->stopSounds();
 
                         ShowCursor(FALSE);
-                        myScene2->updateScene();                   // update with delta time
-
-
-                        // Center the cursor
+                        myScene2->updateScene();
 
                         center.x = fullscreenWidth / 2;
                         center.y = fullscreenHeight / 2;
                         SetCursorPos(center.x, center.y);
 
-                        // Update previous mouse positions to the center so next delta is relative
                         myScene2->myInput->prev_MouseX = center.x;
                         myScene2->myInput->prev_MouseY = center.y;
 
+                        myScene2->drawScene();
 
-                        myScene2->drawScene();                     // draw after update
-
-                        if (keys[VK_ESCAPE] && !prevEsc)
-                        {
+                        if (keys[VK_ESCAPE] && !prevEsc) {
                             sceneSnds->stopSounds();
                             isPaused = true;
-                            previousScene = sceneSwitcher->currentScene;
-                            sceneSwitcher->currentScene = PAUSE_MENU;
+                            previousScene = SCENE_LEVEL_TWO;
                         }
 
-                        if (currentB && !prevB) {
-                            myScene2->showHitBoxes = !myScene2->showHitBoxes;
-                        }
+                        if (currentB && !prevB) myScene2->showHitBoxes = !myScene2->showHitBoxes;
 
-                        if (myScene2->cutScene1->finished)
-                            sceneSwitcher->currentScene = SCENE_LEVEL_THREE;
+                        if (myScene2->cutScene1->finished) sceneSwitcher->currentScene = SCENE_LEVEL_THREE;
 
+                        } else { // PAUSED
+                            drawPauseOverlay(fullscreenWidth, fullscreenHeight, pauseTex);
 
-                        break;
-
-                    case SCENE_LEVEL_THREE:
-
-                        myScene2->snds->stopSounds();
-                        myMenu->snds->stopSounds();
-                        if (introDelay >= 1.0f && !myScene3->startLevel)
-                        {
-                            myScene3->startLevel = true;
-                            introDelay = 0.0f; // reset if you want
-                        }
-
-                        ShowCursor(FALSE);
-                        myScene3->updateScene();                   // update with delta time
-
-
-                        // Center the cursor
-
-                        center.x = fullscreenWidth / 2;
-                        center.y = fullscreenHeight / 2;
-                        SetCursorPos(center.x, center.y);
-
-                        // Update previous mouse positions to the center so next delta is relative
-                        myScene3->myInput->prev_MouseX = center.x;
-                        myScene3->myInput->prev_MouseY = center.y;
-
-
-                        myScene3->drawScene();                     // draw after update
-
-                        if (keys[VK_ESCAPE] && !prevEsc)
-                        {
-                            sceneSnds->stopSounds();
-                            isPaused = true;
-                            previousScene = sceneSwitcher->currentScene;
-                            sceneSwitcher->currentScene = PAUSE_MENU;
-                        }
-
-                        if (currentB && !prevB) {
-                            myScene3->showHitBoxes = !myScene3->showHitBoxes;
-                        }
-
-                        break;
-
-                    case SCENE_MENU:
-                        myMenu->updateScene();                   // update with delta time
-                        myMenu->drawScene();                     // draw after update
-                        glUseProgram(0);
-
-                        if (keys['N']) {
-                            menuSnds->playSound("sounds/button.wav");
-                            sceneSwitcher->currentScene = SCENE_GAME;
-                        }
-
-                        if (keys['Q']) {
-                            menuSnds->playSound("sounds/button.wav");
-                            done = TRUE;
-                        }
-
-                        if (currentH && !prevH) {
-                            menuSnds->playSound("sounds/button.wav");
-                            myMenu->helpOpen = !myMenu->helpOpen;
-                        }
-                        break;
-                    case PAUSE_MENU:
-                        // Draw semi-transparent overlay
-                        glDisable(GL_LIGHTING);
-                        glDisable(GL_DEPTH_TEST);
-                        glEnable(GL_BLEND);
-                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-                        glMatrixMode(GL_PROJECTION);
-                        glPushMatrix();
-                        glLoadIdentity();
-                        glOrtho(0, fullscreenWidth / 2, 0, fullscreenHeight / 2, -1, 1);
-
-                        glMatrixMode(GL_MODELVIEW);
-                        glPushMatrix();
-                        glLoadIdentity();
-
-                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
-                        glBegin(GL_QUADS);
-                            glVertex2f(0, 0);
-                            glVertex2f(fullscreenWidth/2, 0);
-                            glVertex2f(fullscreenWidth/2, fullscreenHeight/2);
-                            glVertex2f(0, fullscreenHeight/2);
-                        glEnd();
-
-                        glMatrixMode(GL_PROJECTION);
-                        glPopMatrix();
-                        glMatrixMode(GL_MODELVIEW);
-                        glPopMatrix();
-
-                        // Input handling for pause menu
-                        if (keys['M'] && !prevM) // example: M returns to main menu
-                        {
+                        if (keys['M'] && !prevM) {
                             menuSnds->playSound("sounds/button.wav");
                             sceneSwitcher->currentScene = SCENE_MENU;
                             isPaused = false;
                         }
 
-                        if (currEsc && !prevEsc) // resume game
-                        {
-                            sceneSwitcher->currentScene = previousScene;
+                        if (keys[VK_ESCAPE] && !prevEsc) {
+                            sceneSnds->eng->setSoundVolume(0.2f);
+                            sceneSnds->playMusic("sounds/gameMusic2.wav");
+                            isPaused = false; // resume game
+                        }
+                        }
+                    break;
+
+                case SCENE_LEVEL_THREE:
+                    if (!isPaused) {
+                        myScene2->snds->stopSounds();
+                        myMenu->snds->stopSounds();
+
+                        if (introDelay >= 1.0f && !myScene3->startLevel) {
+                            myScene3->startLevel = true;
+                            introDelay = 0.0f;
+                        }
+
+                        ShowCursor(FALSE);
+                        myScene3->updateScene();
+
+                        center.x = fullscreenWidth / 2;
+                        center.y = fullscreenHeight / 2;
+                        SetCursorPos(center.x, center.y);
+
+                        myScene3->myInput->prev_MouseX = center.x;
+                        myScene3->myInput->prev_MouseY = center.y;
+
+                        myScene3->drawScene();
+
+                        if (keys[VK_ESCAPE] && !prevEsc) {
+                            sceneSnds->stopSounds();
+                            isPaused = true;
+                            previousScene = SCENE_LEVEL_THREE;
+                        }
+
+                        if (currentB && !prevB) myScene3->showHitBoxes = !myScene3->showHitBoxes;
+
+                        } else { // PAUSED
+                        drawPauseOverlay(fullscreenWidth, fullscreenHeight, pauseTex);
+
+                        if (keys['M'] && !prevM) {
+                            menuSnds->playSound("sounds/button.wav");
+                            sceneSwitcher->currentScene = SCENE_MENU;
                             isPaused = false;
                         }
-                        break;
+
+                        if (keys[VK_ESCAPE] && !prevEsc) {
+                            sceneSnds->eng->setSoundVolume(0.4f);
+                            sceneSnds->playMusic("sounds/gameMusic3.wav");
+                            isPaused = false; // resume game
+                        }
+                        }
+                    break;
+
+                case SCENE_MENU:
+                    myMenu->updateScene();
+                    myMenu->drawScene();
+                    glUseProgram(0);
+
+                    if (keys['N']) {
+                        menuSnds->playSound("sounds/button.wav");
+                        sceneSwitcher->currentScene = SCENE_GAME;
                     }
+
+                    if (keys['Q']) {
+                        menuSnds->playSound("sounds/button.wav");
+                        done = TRUE;
+                    }
+
+                    if (currentH && !prevH) {
+                        menuSnds->playSound("sounds/button.wav");
+                        myMenu->helpOpen = !myMenu->helpOpen;
+                    }
+                break;
+            }
+
                 prevH = currentH;
                 prevB = currentB;
                 prevEsc = currEsc;
+
 
 
 				SwapBuffers(hDC);	    // Swap Buffers (Double Buffering)
