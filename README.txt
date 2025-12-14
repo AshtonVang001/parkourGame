@@ -14,8 +14,6 @@ Flyt is a 3 Dimensional platformer that encorporates futeristic music witha Doom
 We have created a Model Loader that takes glb files from Blender(™). As well as encorperating smooth first person movement with DeltaTime and proper multi-input controls.
 The boss fight 3rd level provides a skill ceiling to completion, so that gamers will have to show their abilities to the community. 
 
-=====Known Bugs=====
-
 =====Nate Glass=====
 Team Lead, Graphics, Music, Model Loader.
 
